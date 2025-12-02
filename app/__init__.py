@@ -22,6 +22,8 @@ def create_app(test_config=None):
     except OSError:
         pass
 
-    @app.route("/pagina-inicial")
+    @app.route("/")
     def pagina_inicial():
         return "Bem-vindo ao aplicativo Flask!"
+    
+    return app
