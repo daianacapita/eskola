@@ -1,4 +1,21 @@
+
+
+/* Esquema SQL para a tabela de Usuários */
+drop table if exists Usuarios;
+CREATE Table Usuarios (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    papel VARCHAR(20) NOT NULL,
+    data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+insert into Usuarios (username, password, email, papel) 
+    values ('daiana', 'eskola', 'daiana02@gmail.com', 'admin');   
+
 /* Esquema SQL para a tabela de Alunos */
+drop table if exists Alunos;
 CREATE Table Alunos (
     id SERIAL PRIMARY KEY,
     nome VARCHAR(100) NOT NULL,
@@ -12,6 +29,7 @@ CREATE Table Alunos (
 );
 
 /* Esquema SQL para a tabela de Professores */
+drop table if exists Professores;
 CREATE Table Professores (
     id SERIAL PRIMARY KEY,
     nome VARCHAR(100) NOT NULL,
@@ -26,6 +44,7 @@ CREATE Table Professores (
 );
 
 /* Esquema SQL para a tabela de Cursos */
+drop table if exists Cursos;
 CREATE Table Cursos (
     id SERIAL PRIMARY KEY,
     nome VARCHAR(100) NOT NULL,
@@ -37,6 +56,7 @@ CREATE Table Cursos (
 );
 
 /* Esquema SQL para a tabela de Turmas */
+drop table if exists Turmas;
 CREATE Table Turmas (
     id SERIAL PRIMARY KEY,
     curso_id INT REFERENCES Cursos(id),
@@ -46,6 +66,7 @@ CREATE Table Turmas (
 );
 
 /* Esquema SQL para a tabela de Matrículas */
+drop table if exists Matriculas;
 CREATE Table Matriculas (
     id SERIAL PRIMARY KEY,
     aluno_id INT REFERENCES Alunos(id),
@@ -55,6 +76,7 @@ CREATE Table Matriculas (
 );
 
 /* Esquema SQL para a tabela de Notas */
+drop table if exists Notas;
 CREATE Table Notas (
     id SERIAL PRIMARY KEY,
     matricula_id INT REFERENCES Matriculas(id),
@@ -64,6 +86,7 @@ CREATE Table Notas (
 );
 
 /* Esquema SQL para a tabela de Disciplinas */
+drop table if exists Disciplinas;
 CREATE Table Disciplinas (
     id SERIAL PRIMARY KEY,
     nome VARCHAR(100) NOT NULL,
