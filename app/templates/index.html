@@ -10,4 +10,10 @@
 {% block content %}
   <p>Sistema de gestão escolar.</p>
   <p>Faça login para acessar sua área.</p>
+  <p>Session user_id: {{ session.get('user_id') }}</p>
+  {% if g.user %}
+    <p>Logado como: {{ g.user['username'] }}</p>
+  {% else %}
+    <p>Não logado.</p>
+  {% endif %}
 {% endblock %}
