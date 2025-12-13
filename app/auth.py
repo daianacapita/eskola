@@ -60,14 +60,14 @@ def login():
         #print("check",[x for x in user])
 
         if user is None:
-            error = 'Incorrect username.'
+            error = 'Usuario não encontrado.'
         elif not check_password_hash(user['password'], password):
-            error = user #'Incorrect password.'
+            error = 'Senha incorreta.'
 
         if error is None:
             session.clear()
             session['user_id'] = user['id']
-            return redirect(url_for('auth.register'))
+            return redirect(url_for('index'))
 
         flash(error)
 

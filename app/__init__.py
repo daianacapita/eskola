@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, render_template
 import os
 
 def create_app(test_config=None):
@@ -23,13 +23,16 @@ def create_app(test_config=None):
         pass
 
     @app.route("/")
-    def pagina_inicial():
-        return "Bem-vindo ao aplicativo Flask!"
+    def index():
+        return render_template('index.html')
     
     from . import db
     db.init_app(app)
 
     from . import auth
     app.register_blueprint(auth.bp)
+
+    from . import student
+    app.register_blueprint(student.bp)
     
     return app
