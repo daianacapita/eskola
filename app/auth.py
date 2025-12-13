@@ -9,30 +9,65 @@ bp = Blueprint('auth', __name__, url_prefix='/auth')
 
 
 # Rota para registrar um novo usuário
-# Atualizar depois 
+@bp.route('/register', methods=('GET', 'POST'))
+def register():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        email = request.form.get('email')
+        db = get_db()
+        error = None
+
+        if not username:
+            error = 'Username is required.'
+        elif not password:
+            error = 'Password is required.'
+        elif not email:
+            error = 'Email is required.'
+
+        if error is None:
+            existing = db.execute(
+                'SELECT id FROM Usuarios WHERE username = ? OR email = ?', (username, email)
+            ).fetchone()
+            if existing is not None:
+                error = 'Username or email already registered.'
+
+        if error is None:
+            db.execute(
+                'INSERT INTO Usuarios (username, password, email, papel) VALUES (?, ?, ?, ?)',
+                (username, generate_password_hash(password), email, 'user')
+            )
+            db.commit()
+            return redirect(url_for('auth.login'))
+
+        flash(error)
+
+    return render_template('auth/register.html')
 
 
 # Rota para fazer login
 @bp.route('/login', methods=('GET', 'POST'))
 def login():
     if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
+        username = request.form.get('username')
+        password = request.form.get('password')
         db = get_db()
         error = None
         user = db.execute(
-            'SELECT * FROM user WHERE username = ? or email = ?', (username,)
+            'SELECT * FROM Usuarios WHERE username = ? or email = ?', (username, username)
         ).fetchone()
+
+        #print("check",[x for x in user])
 
         if user is None:
             error = 'Incorrect username.'
         elif not check_password_hash(user['password'], password):
-            error = 'Incorrect password.'
+            error = user #'Incorrect password.'
 
         if error is None:
             session.clear()
             session['user_id'] = user['id']
-            return redirect(url_for('index'))
+            return redirect(url_for('auth.register'))
 
         flash(error)
 
