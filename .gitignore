@@ -76,3 +76,4 @@ Desktop.ini
 
 # Local settings
 local_settings.py
+*.pyc

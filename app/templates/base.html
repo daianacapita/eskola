@@ -7,13 +7,10 @@
     {% if g.user %}
       <li><span>{{ g.user['username'] }}</span>
       {% if g.user['papel'] == 'admin' %}
-        <li><a href="{{ url_for('admin.aprovar_alunos') }}">Aprovar Alunos</a>
+        <li><a href="{{ url_for('admin.aprovar_alunos') }}">Aprovar Matriculas</a>
         <li><a href="{{ url_for('admin.cursos') }}">Cursos</a>
         <li><a href="{{ url_for('admin.disciplinas') }}">Disciplinas</a>
         <li><a href="{{ url_for('admin.turmas') }}">Turmas</a>
-        <li><a href="{{ url_for('admin.criar_curso') }}">Criar Curso</a>
-        <li><a href="{{ url_for('admin.criar_disciplina') }}">Criar Disciplina</a>
-        <li><a href="{{ url_for('admin.criar_turma') }}">Criar Turma</a>
         <li><a href="{{ url_for('admin.matricular') }}">Matrículas</a>       
         <li><a href="{{ url_for('auth.register') }}">Register</a>
       {% endif %}
