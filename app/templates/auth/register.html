@@ -1,17 +1,77 @@
 {% extends 'base.html' %}
 
 {% block header %}
-  <h1>{% block title %}Register{% endblock %}</h1>
+  <h1>{% block title %}Registrar{% endblock %}</h1>
 {% endblock %}
 
 {% block content %}
+  <h2>Registrar Administrador</h2>
   <form method="post">
+    <input type="hidden" name="type" value="admin">
     <label for="username">Username</label>
     <input name="username" id="username" required>
     <label for="email">Email</label>
-    <input name="email" id="email" required>
+    <input type="email" name="email" id="email" required>
     <label for="password">Password</label>
     <input type="password" name="password" id="password" required>
-    <input type="submit" value="Register">
+    <input type="submit" value="Registrar Admin">
+  </form>
+
+  <h2>Registrar Professor</h2>
+  <form method="post">
+    <input type="hidden" name="type" value="professor">
+    <label for="nome">Nome</label>
+    <input name="nome" id="nome" required>
+    <label for="email_prof">Email</label>
+    <input type="email" name="email" id="email_prof" required>
+    <label for="telefone">Telefone</label>
+    <input name="telefone" id="telefone">
+    <label for="departamento">Departamento</label>
+    <input name="departamento" id="departamento">
+    <label for="numero_bilhete">Número do Bilhete</label>
+    <input name="numero_bilhete" id="numero_bilhete" required>
+    <label for="especialidade">Especialidade</label>
+    <input name="especialidade" id="especialidade">
+    <label for="endereco">Endereço</label>
+    <input name="endereco" id="endereco">
+    <label for="genero">Gênero</label>
+    <select name="genero" id="genero">
+      <option value="M">Masculino</option>
+      <option value="F">Feminino</option>
+      <option value="Outro">Outro</option>
+    </select>
+    <label for="username_prof">Username</label>
+    <input name="username" id="username_prof" required>
+    <label for="password_prof">Password</label>
+    <input type="password" name="password" id="password_prof" required>
+    <input type="submit" value="Registrar Professor">
+  </form>
+
+  <h2>Registrar Aluno</h2>
+  <form method="post">
+    <input type="hidden" name="type" value="aluno">
+    <label for="nome_aluno">Nome</label>
+    <input name="nome" id="nome_aluno" required>
+    <label for="data_nascimento">Data de Nascimento</label>
+    <input type="date" name="data_nascimento" id="data_nascimento" required>
+    <label for="email_aluno">Email</label>
+    <input type="email" name="email" id="email_aluno" required>
+    <label for="telefone_aluno">Telefone</label>
+    <input name="telefone" id="telefone_aluno">
+    <label for="endereco_aluno">Endereço</label>
+    <input name="endereco" id="endereco_aluno">
+    <label for="numero_bilhete_aluno">Número do Bilhete</label>
+    <input name="numero_bilhete" id="numero_bilhete_aluno" required>
+    <label for="genero_aluno">Gênero</label>
+    <select name="genero" id="genero_aluno">
+      <option value="M">Masculino</option>
+      <option value="F">Feminino</option>
+      <option value="Outro">Outro</option>
+    </select>
+    <label for="username_aluno">Username</label>
+    <input name="username" id="username_aluno" required>
+    <label for="password_aluno">Password</label>
+    <input type="password" name="password" id="password_aluno" required>
+    <input type="submit" value="Registrar Aluno">
   </form>
 {% endblock %}

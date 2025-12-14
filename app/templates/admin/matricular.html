@@ -1,0 +1,30 @@
+<!doctype html>
+{% extends "base.html" %}
+
+{% block title %}Matrículas{% endblock %}
+
+{% block header %}
+  <h1>Matrículas de Alunos</h1>
+{% endblock %}
+
+{% block content %}
+  <form method="post">
+    <label for="aluno_id">Selecionar Aluno</label>
+    <select name="aluno_id" id="aluno_id" required>
+      <option value="">-- Escolher Aluno --</option>
+      {% for aluno in alunos %}
+        <option value="{{ aluno['id'] }}">{{ aluno['nome'] }}</option>
+      {% endfor %}
+    </select>
+    
+    <label for="turma_id">Selecionar Turma</label>
+    <select name="turma_id" id="turma_id" required>
+      <option value="">-- Escolher Turma --</option>
+      {% for turma in turmas %}
+        <option value="{{ turma['id'] }}">{{ turma['designacao'] or 'Turma ' + turma['id']|string }}</option>
+      {% endfor %}
+    </select>
+    
+    <input type="submit" value="Matricular">
+  </form>
+{% endblock %}

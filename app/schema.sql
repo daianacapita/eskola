@@ -42,7 +42,12 @@ CREATE TABLE Alunos (
   endereco TEXT,
   data_matricula TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   numero_bilhete TEXT UNIQUE NOT NULL,
-  genero TEXT CHECK(genero IN ('M','F','Outro'))
+  genero TEXT CHECK(genero IN ('M','F','Outro')),
+  nome_pai TEXT,
+  nome_mae TEXT,
+  telefone_encarregado TEXT,
+  curso_preferido_id INTEGER REFERENCES Cursos(id),
+  ano_preferido INTEGER CHECK(ano_preferido >= 1 AND ano_preferido <= 13)
 );
 
 CREATE TABLE Professores (
@@ -66,6 +71,7 @@ CREATE TABLE Usuarios (
   password TEXT NOT NULL, -- guardar hash (ex: scrypt/pbkdf2/bcrypt), nunca password em texto simples
   email TEXT UNIQUE NOT NULL,
   papel TEXT NOT NULL CHECK(papel IN ('admin','secretaria','professor','aluno')),
+  status TEXT NOT NULL DEFAULT 'ativo' CHECK(status IN ('ativo','pendente')),
   professor_id INTEGER REFERENCES Professores(id) ON DELETE SET NULL,
   aluno_id INTEGER REFERENCES Alunos(id) ON DELETE SET NULL,
   data_criacao TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -99,11 +105,10 @@ CREATE TABLE Turmas (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   curso_id INTEGER NOT NULL REFERENCES Cursos(id) ON DELETE RESTRICT,
   ano_lectivo_id INTEGER NOT NULL REFERENCES AnoLectivo(id) ON DELETE RESTRICT,
-  trimestre TEXT NOT NULL CHECK(trimestre IN ('I','II','III')),
   ano INTEGER NOT NULL CHECK(ano >= 1 AND ano <= 13),
   sala_aula TEXT,
   designacao TEXT NOT NULL DEFAULT '', -- ex: "10A", "12B" (opcional)
-  UNIQUE (curso_id, ano_lectivo_id, trimestre, ano, designacao)
+  UNIQUE (curso_id, ano_lectivo_id, ano, designacao)
 );
 
 
@@ -236,7 +241,39 @@ CREATE INDEX idx_usuarios_aluno_id ON Usuarios(aluno_id);
 -- Seed (opcional): AnoLectivo e admin
 -- ============================================================
 
-INSERT INTO AnoLectivo (ano) VALUES (2025);
+INSERT INTO AnoLectivo (ano) VALUES (2025), (2026), (2027);
+
+-- Cursos comuns em Angola (Ensino Básico e Secundário)
+INSERT INTO Cursos (nome, descricao, carga_horaria) VALUES 
+  ('Ensino Primário', 'Ensino básico de 1ª a 4ª classe', 800),
+  ('Ensino Básico (1º Ciclo)', '5ª e 6ª classe', 900),
+  ('Ensino Básico (2º Ciclo)', '7ª, 8ª e 9ª classe', 1000),
+  ('Ensino Secundário', '10ª, 11ª e 12ª classe', 1200);
+
+-- Disciplinas comuns
+INSERT INTO Disciplinas (curso_id, nome, descricao) VALUES 
+  (1, 'Língua Portuguesa', 'Leitura e escrita'),
+  (1, 'Matemática', 'Números e operações básicas'),
+  (1, 'Ciências Naturais', 'Natureza e ambiente'),
+  (2, 'Língua Portuguesa', 'Gramática e literatura'),
+  (2, 'Matemática', 'Geometria e frações'),
+  (2, 'História', 'História de Angola'),
+  (3, 'Língua Portuguesa', 'Análise textual'),
+  (3, 'Matemática', 'Álgebra e estatística'),
+  (3, 'Física', 'Conceitos básicos'),
+  (3, 'Química', 'Matéria e reações'),
+  (3, 'Biologia', 'Vida e ecologia'),
+  (3, 'História', 'História mundial'),
+  (3, 'Geografia', 'Geografia de Angola'),
+  (4, 'Língua Portuguesa', 'Literatura angolana'),
+  (4, 'Matemática', 'Cálculo avançado'),
+  (4, 'Física', 'Mecânica e eletricidade'),
+  (4, 'Química', 'Química orgânica'),
+  (4, 'Biologia', 'Genética e evolução'),
+  (4, 'História', 'História contemporânea'),
+  (4, 'Geografia', 'Geografia mundial'),
+  (4, 'Inglês', 'Língua estrangeira'),
+  (4, 'Educação Física', 'Saúde e desporto');
 
 INSERT INTO Usuarios (username, password, email, papel)
 VALUES (

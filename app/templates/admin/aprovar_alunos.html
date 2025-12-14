@@ -1,0 +1,29 @@
+<!doctype html>
+{% extends "base.html" %}
+
+{% block title %}Aprovar Alunos{% endblock %}
+
+{% block header %}
+  <h1>Alunos Pendentes de Aprovação</h1>
+{% endblock %}
+
+{% block content %}
+  {% for aluno in alunos %}
+    <div>
+      <h3>{{ aluno['nome'] }} ({{ aluno['email'] }})</h3>
+      <form method="post" action="{{ url_for('admin.aprovar_aluno', user_id=aluno['user_id']) }}">
+        <label for="turma_{{ aluno['user_id'] }}">Selecionar Turma</label>
+        <select name="turma_id" id="turma_{{ aluno['user_id'] }}" required>
+          <option value="">-- Escolher Turma --</option>
+          {% for turma in turmas %}
+            <option value="{{ turma['id'] }}">{{ turma['designacao'] }}</option>
+          {% endfor %}
+        </select>
+        <input type="submit" value="Aprovar e Matricular">
+      </form>
+    </div>
+  {% endfor %}
+  {% if not alunos %}
+    <p>Nenhum aluno pendente.</p>
+  {% endif %}
+{% endblock %}

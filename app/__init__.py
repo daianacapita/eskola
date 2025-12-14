@@ -46,5 +46,8 @@ def create_app(test_config=None):
 
     from . import student
     app.register_blueprint(student.bp)
+
+    from . import admin
+    app.register_blueprint(admin.bp)
     
     return app

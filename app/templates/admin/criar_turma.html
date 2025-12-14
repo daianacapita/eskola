@@ -1,0 +1,39 @@
+<!doctype html>
+{% extends "base.html" %}
+
+{% block title %}Criar Turma{% endblock %}
+
+{% block header %}
+  <h1>Criar Nova Turma</h1>
+{% endblock %}
+
+{% block content %}
+  <form method="post">
+    <label for="curso_id">Selecionar Curso</label>
+    <select name="curso_id" id="curso_id" required>
+      <option value="">-- Escolher Curso --</option>
+      {% for curso in cursos %}
+        <option value="{{ curso['id'] }}">{{ curso['nome'] }}</option>
+      {% endfor %}
+    </select>
+    
+    <label for="ano_lectivo_id">Selecionar Ano Lectivo</label>
+    <select name="ano_lectivo_id" id="ano_lectivo_id" required>
+      <option value="">-- Escolher Ano --</option>
+      {% for ano in anos_lectivos %}
+        <option value="{{ ano['id'] }}">{{ ano['ano'] }}</option>
+      {% endfor %}
+    </select>
+    
+    <label for="ano">Ano</label>
+    <input type="number" name="ano" id="ano" min="1" max="13" required>
+    
+    <label for="sala_aula">Sala de Aula</label>
+    <input name="sala_aula" id="sala_aula">
+    
+    <label for="designacao">Designação</label>
+    <input name="designacao" id="designacao">
+    
+    <input type="submit" value="Criar Turma">
+  </form>
+{% endblock %}

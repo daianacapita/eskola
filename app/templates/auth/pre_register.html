@@ -1,0 +1,54 @@
+<!doctype html>
+{% extends 'base.html' %}
+
+{% block header %}
+  <h1>{% block title %}Pré-Inscrição de Aluno{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+  <form method="post">
+    <label for="nome">Nome Completo</label>
+    <input name="nome" id="nome" required>
+    <label for="data_nascimento">Data de Nascimento</label>
+    <input type="date" name="data_nascimento" id="data_nascimento" required>
+    <label for="email">Email</label>
+    <input type="email" name="email" id="email" required>
+    <label for="telefone">Telefone</label>
+    <input name="telefone" id="telefone">
+    <label for="endereco">Endereço</label>
+    <input name="endereco" id="endereco">
+    <label for="numero_bilhete">Número do Bilhete</label>
+    <input name="numero_bilhete" id="numero_bilhete" required>
+    <label for="genero">Gênero</label>
+    <select name="genero" id="genero">
+      <option value="M">Masculino</option>
+      <option value="F">Feminino</option>
+      <option value="Outro">Outro</option>
+    </select>
+    <label for="nome_pai">Nome do Pai</label>
+    <input name="nome_pai" id="nome_pai">
+    <label for="nome_mae">Nome da Mãe</label>
+    <input name="nome_mae" id="nome_mae">
+    <label for="telefone_encarregado">Telefone do Encarregado</label>
+    <input name="telefone_encarregado" id="telefone_encarregado">
+    <label for="curso_preferido_id">Curso Pretendido</label>
+    <select name="curso_preferido_id" id="curso_preferido_id" required>
+      <option value="">Selecione um curso</option>
+      {% for curso in cursos %}
+      <option value="{{ curso.id }}">{{ curso.nome }}</option>
+      {% endfor %}
+    </select>
+    <label for="ano_preferido">Ano/Class Pretendido</label>
+    <select name="ano_preferido" id="ano_preferido" required>
+      <option value="">Selecione o ano</option>
+      {% for i in range(1, 14) %}
+      <option value="{{ i }}">{{ i }}ª Classe</option>
+      {% endfor %}
+    </select>
+    <label for="username">Username</label>
+    <input name="username" id="username" required>
+    <label for="password">Password</label>
+    <input type="password" name="password" id="password" required>
+    <input type="submit" value="Enviar Pré-Inscrição">
+  </form>
+{% endblock %}

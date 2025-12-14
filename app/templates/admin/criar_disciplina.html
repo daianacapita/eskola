@@ -1,0 +1,28 @@
+<!doctype html>
+{% extends "base.html" %}
+
+{% block title %}Criar Disciplina{% endblock %}
+
+{% block header %}
+  <h1>Criar Nova Disciplina</h1>
+{% endblock %}
+
+{% block content %}
+  <form method="post">
+    <label for="curso_id">Selecionar Curso</label>
+    <select name="curso_id" id="curso_id" required>
+      <option value="">-- Escolher Curso --</option>
+      {% for curso in cursos %}
+        <option value="{{ curso['id'] }}">{{ curso['nome'] }}</option>
+      {% endfor %}
+    </select>
+    
+    <label for="nome">Nome da Disciplina</label>
+    <input name="nome" id="nome" required>
+    
+    <label for="descricao">Descrição</label>
+    <textarea name="descricao" id="descricao"></textarea>
+    
+    <input type="submit" value="Criar Disciplina">
+  </form>
+{% endblock %}

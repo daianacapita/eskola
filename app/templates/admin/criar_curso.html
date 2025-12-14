@@ -1,0 +1,23 @@
+<!doctype html>
+{% extends "base.html" %}
+
+{% block title %}Criar Curso{% endblock %}
+
+{% block header %}
+  <h1>Criar Novo Curso</h1>
+{% endblock %}
+
+{% block content %}
+  <form method="post">
+    <label for="nome">Nome do Curso</label>
+    <input name="nome" id="nome" required>
+    
+    <label for="descricao">Descrição</label>
+    <textarea name="descricao" id="descricao"></textarea>
+    
+    <label for="carga_horaria">Carga Horária</label>
+    <input type="number" name="carga_horaria" id="carga_horaria" required>
+    
+    <input type="submit" value="Criar Curso">
+  </form>
+{% endblock %}
