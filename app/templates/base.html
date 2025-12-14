@@ -2,13 +2,30 @@
 <title>{% block title %}{% endblock %} - Flaskr</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 <nav>
-  <h1>Flaskr</h1>
+  <h1>eskola</h1>
   <ul>
     {% if g.user %}
       <li><span>{{ g.user['username'] }}</span>
+      {% if g.user['papel'] == 'admin' %}
+        <li><a href="{{ url_for('admin.aprovar_alunos') }}">Aprovar Alunos</a>
+        <li><a href="{{ url_for('admin.cursos') }}">Cursos</a>
+        <li><a href="{{ url_for('admin.disciplinas') }}">Disciplinas</a>
+        <li><a href="{{ url_for('admin.turmas') }}">Turmas</a>
+        <li><a href="{{ url_for('admin.criar_curso') }}">Criar Curso</a>
+        <li><a href="{{ url_for('admin.criar_disciplina') }}">Criar Disciplina</a>
+        <li><a href="{{ url_for('admin.criar_turma') }}">Criar Turma</a>
+        <li><a href="{{ url_for('admin.matricular') }}">Matrículas</a>       
+        <li><a href="{{ url_for('auth.register') }}">Register</a>
+      {% endif %}
+      {%if g.user['papel'] == 'professor' %}
+        <li><a href="{{ url_for('teacher.teacher_area') }}">Área do Professor</a>
+      {% endif %}
+      {% if g.user['papel'] == 'aluno' %}
+        <li><a href="{{ url_for('student.student_area') }}">Área do Estudante</a>
+      {% endif %}
       <li><a href="{{ url_for('auth.logout') }}">Log Out</a>
     {% else %}
-      <li><a href="{{ url_for('auth.register') }}">Register</a>
+      <li><a href="{{ url_for('auth.pre_register') }}">Pré-Inscrição</a>
       <li><a href="{{ url_for('auth.login') }}">Log In</a>
     {% endif %}
   </ul>

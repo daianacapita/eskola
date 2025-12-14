@@ -1,0 +1,21 @@
+<!doctype html>
+{% extends "base.html" %}
+
+{% block title %}Cursos{% endblock %}
+
+{% block header %}
+  <h1>Gerenciar Cursos</h1>
+{% endblock %}
+
+{% block content %}
+  <a href="{{ url_for('admin.criar_curso') }}">Criar Novo Curso</a>
+  <ul>
+    {% for curso in cursos %}
+      <li>{{ curso['nome'] }} - {{ curso['descricao'] }}
+        <form method="post" action="{{ url_for('admin.deletar_curso', id=curso['id']) }}" style="display:inline;">
+          <input type="submit" value="Deletar" onclick="return confirm('Tem certeza?')">
+        </form>
+      </li>
+    {% endfor %}
+  </ul>
+{% endblock %}
