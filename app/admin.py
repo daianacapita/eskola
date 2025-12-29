@@ -202,13 +202,30 @@ def aprovar_alunos():
     
     db = get_db()
     alunos_pendentes = db.execute('''
-        SELECT u.id as user_id, a.id as aluno_id, a.nome, a.email
+        SELECT u.id as user_id, a.id as aluno_id, a.nome, a.email, a.curso_preferido_id, a.ano_preferido
         FROM Usuarios u
         JOIN Alunos a ON u.aluno_id = a.id
         WHERE u.status = 'pendente' AND u.papel = 'aluno'
     ''').fetchall()
-    turmas = db.execute('SELECT id, designacao FROM Turmas').fetchall()
-    return render_template('admin/aprovar_alunos.html', alunos=alunos_pendentes, turmas=turmas)
+    
+    # For each student, get matching turmas
+    alunos_com_turmas = []
+    for aluno in alunos_pendentes:
+        turmas = db.execute('''
+            SELECT t.id, t.designacao, c.nome as curso_nome
+            FROM Turmas t
+            JOIN Cursos c ON t.curso_id = c.id
+            WHERE t.curso_id = ? AND t.ano = ?
+        ''', (aluno['curso_preferido_id'], aluno['ano_preferido'])).fetchall()
+        alunos_com_turmas.append({
+            'user_id': aluno['user_id'],
+            'aluno_id': aluno['aluno_id'],
+            'nome': aluno['nome'],
+            'email': aluno['email'],
+            'turmas': turmas
+        })
+    
+    return render_template('admin/aprovar_alunos.html', alunos=alunos_com_turmas)
 
 @bp.route('/aprovar_aluno/<int:user_id>', methods=['POST'])
 @login_required
@@ -236,3 +253,37 @@ def aprovar_aluno(user_id):
     db.commit()
     flash('Aluno aprovado e matriculado.')
     return redirect(url_for('admin.aprovar_alunos'))
+
+@bp.route('/anuncios')
+@login_required
+def anuncios():
+    if g.user['papel'] != 'admin':
+        flash('Acesso negado.')
+        return redirect(url_for('index'))
+    
+    db = get_db()
+    anuncios = db.execute('SELECT * FROM Anuncios ORDER BY data_publicacao DESC').fetchall()
+    return render_template('admin/anuncios.html', anuncios=anuncios)
+
+@bp.route('/criar_anuncio', methods=['GET', 'POST'])
+@login_required
+def criar_anuncio():
+    if g.user['papel'] != 'admin':
+        flash('Acesso negado.')
+        return redirect(url_for('index'))
+    
+    if request.method == 'POST':
+        titulo = request.form.get('titulo')
+        conteudo = request.form.get('conteudo')
+        
+        if not titulo or not conteudo:
+            flash('Título e conteúdo são obrigatórios.')
+            return redirect(url_for('admin.criar_anuncio'))
+        
+        db = get_db()
+        db.execute('INSERT INTO Anuncios (titulo, conteudo, admin_id) VALUES (?, ?, ?)', (titulo, conteudo, g.user['id']))
+        db.commit()
+        flash('Anúncio criado com sucesso.')
+        return redirect(url_for('admin.anuncios'))
+    
+    return render_template('admin/criar_anuncio.html')

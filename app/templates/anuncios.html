@@ -1,0 +1,21 @@
+<!doctype html>
+{% extends "base.html" %}
+
+{% block title %}Anúncios{% endblock %}
+
+{% block header %}
+  <h1>Anúncios e Comunicados</h1>
+{% endblock %}
+
+{% block content %}
+  {% for anuncio in anuncios %}
+    <div>
+      <h3>{{ anuncio['titulo'] }}</h3>
+      <p>{{ anuncio['conteudo'] }}</p>
+      <small>Publicado em {{ anuncio['data_publicacao'] }}</small>
+    </div>
+  {% endfor %}
+  {% if not anuncios %}
+    <p>Nenhum anúncio disponível.</p>
+  {% endif %}
+{% endblock %}

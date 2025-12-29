@@ -7,6 +7,7 @@ PRAGMA foreign_keys = ON;
 -- ============================================================
 -- DROP (ordem inversa das dependências)
 -- ============================================================
+DROP TABLE IF EXISTS Anuncios;
 DROP TABLE IF EXISTS Presencas;
 DROP TABLE IF EXISTS Aulas;
 DROP TABLE IF EXISTS Notas;
@@ -31,6 +32,13 @@ DROP TABLE IF EXISTS AnoLectivo;
 CREATE TABLE AnoLectivo (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   ano INTEGER NOT NULL UNIQUE CHECK(ano >= 2000)
+);
+
+CREATE TABLE Cursos (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  nome TEXT NOT NULL UNIQUE,
+  descricao TEXT,
+  carga_horaria INTEGER NOT NULL CHECK(carga_horaria > 0)
 );
 
 CREATE TABLE Alunos (
@@ -83,15 +91,20 @@ CREATE TABLE Usuarios (
 );
 
 -- ============================================================
--- Estrutura académica
+-- Anúncios e Comunicados
 -- ============================================================
 
-CREATE TABLE Cursos (
+CREATE TABLE Anuncios (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  nome TEXT NOT NULL UNIQUE,
-  descricao TEXT,
-  carga_horaria INTEGER NOT NULL CHECK(carga_horaria > 0)
+  titulo TEXT NOT NULL,
+  conteudo TEXT NOT NULL,
+  data_publicacao TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  admin_id INTEGER NOT NULL REFERENCES Usuarios(id) ON DELETE CASCADE
 );
+
+-- ============================================================
+-- Estrutura académica
+-- ============================================================
 
 CREATE TABLE Disciplinas (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -105,7 +118,7 @@ CREATE TABLE Turmas (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   curso_id INTEGER NOT NULL REFERENCES Cursos(id) ON DELETE RESTRICT,
   ano_lectivo_id INTEGER NOT NULL REFERENCES AnoLectivo(id) ON DELETE RESTRICT,
-  ano INTEGER NOT NULL CHECK(ano >= 1 AND ano <= 13),
+  ano INTEGER NOT NULL CHECK(ano >= 10 AND ano <= 12),
   sala_aula TEXT,
   designacao TEXT NOT NULL DEFAULT '', -- ex: "10A", "12B" (opcional)
   UNIQUE (curso_id, ano_lectivo_id, ano, designacao)
@@ -245,10 +258,10 @@ INSERT INTO AnoLectivo (ano) VALUES (2025), (2026), (2027);
 
 -- Cursos comuns em Angola (Ensino Básico e Secundário)
 INSERT INTO Cursos (nome, descricao, carga_horaria) VALUES 
-  ('Ensino Primário', 'Ensino básico de 1ª a 4ª classe', 800),
-  ('Ensino Básico (1º Ciclo)', '5ª e 6ª classe', 900),
-  ('Ensino Básico (2º Ciclo)', '7ª, 8ª e 9ª classe', 1000),
-  ('Ensino Secundário', '10ª, 11ª e 12ª classe', 1200);
+  ('CFB', 'Ciências Físicas e Biológicas', 800),
+  ('CEJ', 'Ciências Económicas e Jurídicas', 900),
+  ('CHu', 'Ciências Humanas', 1000),
+  ('AVi', 'Artes Visuais', 1200);
 
 -- Disciplinas comuns
 INSERT INTO Disciplinas (curso_id, nome, descricao) VALUES 

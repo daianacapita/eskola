@@ -184,7 +184,7 @@ def pre_register():
         flash(error)
 
     db = get_db()
-    cursos = db.execute('SELECT id, nome FROM Cursos ORDER BY id').fetchall()
+    cursos = db.execute('SELECT id, nome, descricao FROM Cursos ORDER BY id').fetchall()
     return render_template('auth/pre_register.html', cursos=cursos)
 
 

@@ -35,13 +35,13 @@
     <select name="curso_preferido_id" id="curso_preferido_id" required>
       <option value="">Selecione um curso</option>
       {% for curso in cursos %}
-      <option value="{{ curso.id }}">{{ curso.nome }}</option>
+      <option value="{{ curso.id }}">{{ curso.nome }} - {{ curso.descricao }}</option>
       {% endfor %}
     </select>
-    <label for="ano_preferido">Ano/Class Pretendido</label>
+    <label for="ano_preferido">Classe Pretendido</label>
     <select name="ano_preferido" id="ano_preferido" required>
-      <option value="">Selecione o ano</option>
-      {% for i in range(1, 14) %}
+      <option value="">Selecione a Classe</option>
+      {% for i in range(10, 13) %}
       <option value="{{ i }}">{{ i }}ª Classe</option>
       {% endfor %}
     </select>

@@ -1,0 +1,18 @@
+<!doctype html>
+{% extends "base.html" %}
+
+{% block title %}Criar Anúncio{% endblock %}
+
+{% block header %}
+  <h1>Criar Anúncio</h1>
+{% endblock %}
+
+{% block content %}
+  <form method="post">
+    <label for="titulo">Título</label>
+    <input name="titulo" id="titulo" required>
+    <label for="conteudo">Conteúdo</label>
+    <textarea name="conteudo" id="conteudo" required></textarea>
+    <input type="submit" value="Criar Anúncio">
+  </form>
+{% endblock %}

@@ -49,5 +49,11 @@ def create_app(test_config=None):
 
     from . import admin
     app.register_blueprint(admin.bp)
+
+    @app.route('/anuncios')
+    def anuncios():
+        db = get_db()
+        anuncios = db.execute('SELECT titulo, conteudo, data_publicacao FROM Anuncios ORDER BY data_publicacao DESC').fetchall()
+        return render_template('anuncios.html', anuncios=anuncios)
     
     return app
