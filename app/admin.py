@@ -180,6 +180,44 @@ def turmas():
     ''').fetchall()
     return render_template('admin/turmas.html', turmas=turmas)
 
+@bp.route('/turma/<int:id>')
+@login_required
+def turma_detalhes(id):
+    if g.user['papel'] != 'admin':
+        flash('Acesso negado.')
+        return redirect(url_for('index'))
+    
+    db = get_db()
+    turma = db.execute('''
+        SELECT t.*, c.nome as curso_nome, c.descricao as curso_descricao, a.ano as ano_lectivo
+        FROM Turmas t 
+        JOIN Cursos c ON t.curso_id = c.id
+        JOIN AnoLectivo a ON t.ano_lectivo_id = a.id
+        WHERE t.id = ?
+    ''', (id,)).fetchone()
+    
+    if turma is None:
+        flash('Turma não encontrada.')
+        return redirect(url_for('admin.turmas'))
+    
+    alunos = db.execute('''
+        SELECT a.id, a.nome, a.email, m.status
+        FROM Alunos a
+        JOIN Matriculas m ON a.id = m.aluno_id
+        WHERE m.turma_id = ? AND m.status = 'ativa'
+        ORDER BY a.nome
+    ''', (id,)).fetchall()
+    
+    disciplinas = db.execute('''
+        SELECT d.nome, d.descricao
+        FROM Disciplinas d
+        JOIN TurmaDisciplinas td ON d.id = td.disciplina_id
+        WHERE td.turma_id = ?
+        ORDER BY d.nome
+    ''', (id,)).fetchall()
+    
+    return render_template('admin/turma_detalhes.html', turma=turma, alunos=alunos, disciplinas=disciplinas)
+
 @bp.route('/deletar_turma/<int:id>', methods=['POST'])
 @login_required
 def deletar_turma(id):

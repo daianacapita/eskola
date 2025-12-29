@@ -1,0 +1,52 @@
+<!doctype html>
+{% extends "base.html" %}
+
+{% block title %}Detalhes da Turma{% endblock %}
+
+{% block header %}
+  <h1>Detalhes da Turma: {{ turma['designacao'] }}</h1>
+{% endblock %}
+
+{% block content %}
+  <h2>Informações da Turma</h2>
+  <p><strong>Designação:</strong> {{ turma['designacao'] }}</p>
+  <p><strong>Ano:</strong> {{ turma['ano'] }}</p>
+  <p><strong>Curso:</strong> {{ turma['curso_nome'] }} - {{ turma['curso_descricao'] }}</p>
+  <p><strong>Ano Lectivo:</strong> {{ turma['ano_lectivo'] }}</p>
+  <p><strong>Sala de Aula:</strong> {{ turma['sala_aula'] or 'Não definida' }}</p>
+
+  <h2>Disciplinas</h2>
+  <ul>
+    {% for disciplina in disciplinas %}
+      <li>{{ disciplina['nome'] }} - {{ disciplina['descricao'] }}</li>
+    {% endfor %}
+  </ul>
+  {% if not disciplinas %}
+    <p>Nenhuma disciplina associada.</p>
+  {% endif %}
+
+  <h2>Alunos Matriculados</h2>
+  <table border="1">
+    <thead>
+      <tr>
+        <th>Nome</th>
+        <th>Email</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for aluno in alunos %}
+        <tr>
+          <td>{{ aluno['nome'] }}</td>
+          <td>{{ aluno['email'] }}</td>
+          <td>{{ aluno['status'] }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% if not alunos %}
+    <p>Nenhum aluno matriculado.</p>
+  {% endif %}
+
+  <a href="{{ url_for('admin.turmas') }}">Voltar para Turmas</a>
+{% endblock %}

@@ -11,7 +11,7 @@
   <a href="{{ url_for('admin.criar_turma') }}">Criar Nova Turma</a>
   <ul>
     {% for turma in turmas %}
-      <li>{{ turma['designacao'] }} - Ano {{ turma['ano'] }} ({{ turma['curso_nome'] }}, {{ turma['ano_lectivo'] }})
+      <li><a href="{{ url_for('admin.turma_detalhes', id=turma['id']) }}">{{ turma['designacao'] }}</a> - Ano {{ turma['ano'] }} ({{ turma['curso_nome'] }}, {{ turma['ano_lectivo'] }})
         <form method="post" action="{{ url_for('admin.deletar_turma', id=turma['id']) }}" style="display:inline;">
           <input type="submit" value="Deletar" onclick="return confirm('Tem certeza?')">
         </form>
