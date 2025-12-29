@@ -36,7 +36,9 @@ def create_app(test_config=None):
 
     @app.route("/")
     def index():
-        return render_template('index.html')
+        db = get_db()
+        anuncios = db.execute('SELECT titulo, conteudo, data_publicacao FROM Anuncios ORDER BY data_publicacao DESC LIMIT 5').fetchall()
+        return render_template('index.html', anuncios=anuncios)
     
     from . import db
     db.init_app(app)

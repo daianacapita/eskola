@@ -10,4 +10,16 @@
 {% block content %}
   <p>Sistema de gestão escolar.</p>
   <p>Faça login para acessar sua área.</p>
+
+  {% if anuncios %}
+  <h2>Anúncios Recentes</h2>
+  {% for anuncio in anuncios %}
+    <div style="border: 1px solid #ccc; padding: 10px; margin: 10px 0;">
+      <h3>{{ anuncio['titulo'] }}</h3>
+      <p>{{ anuncio['conteudo'] }}</p>
+      <small>Publicado em {{ anuncio['data_publicacao'] }}</small>
+    </div>
+  {% endfor %}
+  <p><a href="{{ url_for('anuncios') }}">Ver todos os anúncios</a></p>
+  {% endif %}
 {% endblock %}

@@ -8,6 +8,9 @@
 {% endblock %}
 
 {% block content %}
+  {% if g.user and g.user['papel'] == 'admin' %}
+    <a href="{{ url_for('admin.criar_anuncio') }}">Adicionar Anúncio</a>
+  {% endif %}
   {% for anuncio in anuncios %}
     <div>
       <h3>{{ anuncio['titulo'] }}</h3>
