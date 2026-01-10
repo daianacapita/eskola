@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, g, request, flash, redirect, url_for
+from flask import Blueprint, render_template, g, request, flash, redirect, url_for, session
 from app.auth import login_required
 from app.db import get_db
 
@@ -333,6 +333,10 @@ def turma_detalhes(id):
         (id,)
     ).fetchone()
     total_atribuidas = total_atribuidas_row[0] if total_atribuidas_row is not None else 0
+
+    notas_trimestre_default = session.get('admin_notas_trimestre', 1)
+    if notas_trimestre_default not in (1, 2, 3):
+        notas_trimestre_default = 1
     
     return render_template(
         'admin/turma_detalhes.html',
@@ -340,7 +344,8 @@ def turma_detalhes(id):
         alunos=alunos,
         disciplinas=disciplinas,
         total_curso=total_curso,
-        total_atribuidas=total_atribuidas
+        total_atribuidas=total_atribuidas,
+        notas_trimestre_default=notas_trimestre_default
     )
 
 
@@ -351,13 +356,18 @@ def notas_turma(id):
         flash('Acesso negado.')
         return redirect(url_for('index'))
 
-    trimestre = request.args.get('trimestre', '1')
-    try:
-        trimestre_int = int(trimestre)
-    except (TypeError, ValueError):
-        trimestre_int = 1
+    trimestre = request.args.get('trimestre')
+    if trimestre is None:
+        trimestre_int = session.get('admin_notas_trimestre', 1)
+    else:
+        try:
+            trimestre_int = int(trimestre)
+        except (TypeError, ValueError):
+            trimestre_int = 1
     if trimestre_int not in (1, 2, 3):
         trimestre_int = 1
+
+    session['admin_notas_trimestre'] = trimestre_int
 
     db = get_db()
     turma = db.execute('''
@@ -455,10 +465,6 @@ def salvar_notas_turma(id):
         if not key.startswith('nota-'):
             continue
 
-        raw = (value or '').strip()
-        if raw == '':
-            continue
-
         parts = key.split('-', 2)
         if len(parts) != 3:
             continue
@@ -471,6 +477,14 @@ def salvar_notas_turma(id):
             return redirect(url_for('admin.notas_turma', id=id, trimestre=trimestre_int))
 
         if matricula_id not in valid_matriculas or turma_disciplina_id not in valid_turma_disciplinas:
+            continue
+
+        raw = (value or '').strip()
+        if raw == '':
+            db.execute(
+                'DELETE FROM NotasTrimestrais WHERE matricula_id = ? AND turma_disciplina_id = ? AND trimestre = ?',
+                (matricula_id, turma_disciplina_id, trimestre_int)
+            )
             continue
 
         try:

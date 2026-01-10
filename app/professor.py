@@ -1,6 +1,6 @@
 import functools
 
-from flask import Blueprint, flash, g, redirect, render_template, request, url_for
+from flask import Blueprint, flash, g, redirect, render_template, request, url_for, session
 
 from app.db import get_db
 
@@ -55,19 +55,32 @@ def index():
         (g.user['professor_id'],)
     ).fetchall()
 
-    return render_template('professor/index.html', docencias=docencias)
+    trimestre_default = session.get('prof_notas_trimestre', 1)
+    if trimestre_default not in (1, 2, 3):
+        trimestre_default = 1
+
+    return render_template(
+        'professor/index.html',
+        docencias=docencias,
+        trimestre_default=trimestre_default
+    )
 
 
 @bp.route('/turma_disciplina/<int:turma_disciplina_id>/notas')
 @professor_required
 def notas_disciplina(turma_disciplina_id):
-    trimestre = request.args.get('trimestre', '1')
-    try:
-        trimestre_int = int(trimestre)
-    except (TypeError, ValueError):
-        trimestre_int = 1
+    trimestre = request.args.get('trimestre')
+    if trimestre is None:
+        trimestre_int = session.get('prof_notas_trimestre', 1)
+    else:
+        try:
+            trimestre_int = int(trimestre)
+        except (TypeError, ValueError):
+            trimestre_int = 1
     if trimestre_int not in (1, 2, 3):
         trimestre_int = 1
+
+    session['prof_notas_trimestre'] = trimestre_int
 
     db = get_db()
 
@@ -175,10 +188,6 @@ def salvar_notas_disciplina(turma_disciplina_id):
         if not key.startswith('nota-'):
             continue
 
-        raw = (value or '').strip()
-        if raw == '':
-            continue
-
         parts = key.split('-', 1)
         if len(parts) != 2:
             continue
@@ -190,6 +199,14 @@ def salvar_notas_disciplina(turma_disciplina_id):
             return redirect(url_for('professor.notas_disciplina', turma_disciplina_id=turma_disciplina_id, trimestre=trimestre_int))
 
         if matricula_id not in valid_matriculas:
+            continue
+
+        raw = (value or '').strip()
+        if raw == '':
+            db.execute(
+                'DELETE FROM NotasTrimestrais WHERE matricula_id = ? AND turma_disciplina_id = ? AND trimestre = ?',
+                (matricula_id, turma_disciplina_id, trimestre_int)
+            )
             continue
 
         try:

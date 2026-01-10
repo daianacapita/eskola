@@ -16,7 +16,7 @@
         <li>
           {{ item['curso_nome'] }} - Classe {{ item['ano'] }} - {{ item['designacao'] }} ({{ item['ano_lectivo'] }})
           - {{ item['disciplina_nome'] }}
-          - <a href="{{ url_for('professor.notas_disciplina', turma_disciplina_id=item['turma_disciplina_id'], trimestre=1) }}">Lançar notas</a>
+          - <a href="{{ url_for('professor.notas_disciplina', turma_disciplina_id=item['turma_disciplina_id'], trimestre=trimestre_default) }}">Lançar notas</a>
         </li>
       {% endfor %}
     </ul>
