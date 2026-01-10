@@ -114,6 +114,7 @@ CREATE TABLE Disciplinas (
   ano INTEGER NOT NULL CHECK(ano >= 10 AND ano <= 12),
   nome TEXT NOT NULL,
   descricao TEXT,
+  carga_semanal INTEGER NOT NULL DEFAULT 1 CHECK(carga_semanal >= 1 AND carga_semanal <= 15),
   UNIQUE (curso_id, ano, nome)
 );
 

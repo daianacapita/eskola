@@ -12,7 +12,7 @@
   <p><strong>Curso:</strong> {{ turma['curso_nome'] }}</p>
   <p><strong>Classe:</strong> {{ turma['ano'] }}</p>
   <p><strong>Ano Lectivo:</strong> {{ turma['ano_lectivo'] }}</p>
-  <p><strong>Período:</strong> {{ turma['periodo'] }}</p>
+  <p><strong>Período:</strong> {{ periodo_label }}</p>
 
   <h2>Grade Semanal</h2>
 
@@ -53,7 +53,7 @@
                   <option value="">-- Disciplina --</option>
                   {% for d in turma_disciplinas %}
                     <option value="{{ d['turma_disciplina_id'] }}" {% if td_id and d['turma_disciplina_id'] == td_id %}selected{% endif %}>
-                      {{ d['nome'] }}
+                      {{ d['nome'] }} ({{ contagens_td.get(d['turma_disciplina_id'], 0) }}/{{ carga_td.get(d['turma_disciplina_id'], 1) }})
                     </option>
                   {% endfor %}
                 </select>
