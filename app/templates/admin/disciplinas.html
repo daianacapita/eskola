@@ -11,7 +11,7 @@
   <a href="{{ url_for('admin.criar_disciplina') }}">Criar Nova Disciplina</a>
   <ul>
     {% for disciplina in disciplinas %}
-      <li>{{ disciplina['nome'] }} ({{ disciplina['curso_nome'] }}) - {{ disciplina['descricao'] }}
+      <li>{{ disciplina['nome'] }} ({{ disciplina['curso_nome'] }} - Classe {{ disciplina['ano'] }}) - {{ disciplina['descricao'] }}
         <form method="post" action="{{ url_for('admin.deletar_disciplina', id=disciplina['id']) }}" style="display:inline;">
           <input type="submit" value="Deletar" onclick="return confirm('Tem certeza?')">
         </form>

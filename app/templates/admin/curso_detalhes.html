@@ -1,0 +1,34 @@
+<!doctype html>
+{% extends "base.html" %}
+
+{% block title %}Curso{% endblock %}
+
+{% block header %}
+  <h1>Curso: {{ curso['nome'] }}</h1>
+{% endblock %}
+
+{% block content %}
+  <p><strong>Descrição:</strong> {{ curso['descricao'] or 'Sem descrição' }}</p>
+  <p><strong>Carga horária:</strong> {{ curso['carga_horaria'] }}</p>
+
+  <h2>Classes e Turmas</h2>
+
+  {% if classes %}
+    {% for classe in classes %}
+      <h3>Classe {{ classe }}</h3>
+      <ul>
+        {% for turma in turmas_por_classe[classe] %}
+          <li>
+            <a href="{{ url_for('admin.turma_detalhes', id=turma['id']) }}">{{ turma['designacao'] }}</a>
+            ({{ turma['ano_lectivo'] }})
+            {% if turma['sala_aula'] %}- Sala {{ turma['sala_aula'] }}{% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    {% endfor %}
+  {% else %}
+    <p>Este curso ainda não tem turmas criadas.</p>
+  {% endif %}
+
+  <a href="{{ url_for('admin.cursos') }}">Voltar para Cursos</a>
+{% endblock %}

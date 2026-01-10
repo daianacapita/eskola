@@ -109,9 +109,10 @@ CREATE TABLE Anuncios (
 CREATE TABLE Disciplinas (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   curso_id INTEGER NOT NULL REFERENCES Cursos(id) ON DELETE CASCADE,
+  ano INTEGER NOT NULL CHECK(ano >= 10 AND ano <= 12),
   nome TEXT NOT NULL,
   descricao TEXT,
-  UNIQUE (curso_id, nome)
+  UNIQUE (curso_id, ano, nome)
 );
 
 CREATE TABLE Turmas (
@@ -231,6 +232,7 @@ CREATE INDEX idx_matriculas_aluno_id ON Matriculas(aluno_id);
 CREATE INDEX idx_matriculas_turma_id ON Matriculas(turma_id);
 
 CREATE INDEX idx_disciplinas_curso_id ON Disciplinas(curso_id);
+CREATE INDEX idx_disciplinas_curso_ano ON Disciplinas(curso_id, ano);
 
 CREATE INDEX idx_turma_disciplinas_turma_id ON TurmaDisciplinas(turma_id);
 CREATE INDEX idx_turma_disciplinas_disciplina_id ON TurmaDisciplinas(disciplina_id);
@@ -264,29 +266,29 @@ INSERT INTO Cursos (nome, descricao, carga_horaria) VALUES
   ('AVi', 'Artes Visuais', 1200);
 
 -- Disciplinas comuns
-INSERT INTO Disciplinas (curso_id, nome, descricao) VALUES 
-  (1, 'Língua Portuguesa', 'Leitura e escrita'),
-  (1, 'Matemática', 'Números e operações básicas'),
-  (1, 'Ciências Naturais', 'Natureza e ambiente'),
-  (2, 'Língua Portuguesa', 'Gramática e literatura'),
-  (2, 'Matemática', 'Geometria e frações'),
-  (2, 'História', 'História de Angola'),
-  (3, 'Língua Portuguesa', 'Análise textual'),
-  (3, 'Matemática', 'Álgebra e estatística'),
-  (3, 'Física', 'Conceitos básicos'),
-  (3, 'Química', 'Matéria e reações'),
-  (3, 'Biologia', 'Vida e ecologia'),
-  (3, 'História', 'História mundial'),
-  (3, 'Geografia', 'Geografia de Angola'),
-  (4, 'Língua Portuguesa', 'Literatura angolana'),
-  (4, 'Matemática', 'Cálculo avançado'),
-  (4, 'Física', 'Mecânica e eletricidade'),
-  (4, 'Química', 'Química orgânica'),
-  (4, 'Biologia', 'Genética e evolução'),
-  (4, 'História', 'História contemporânea'),
-  (4, 'Geografia', 'Geografia mundial'),
-  (4, 'Inglês', 'Língua estrangeira'),
-  (4, 'Educação Física', 'Saúde e desporto');
+INSERT INTO Disciplinas (curso_id, ano, nome, descricao) VALUES 
+  (1, 10, 'Língua Portuguesa', 'Leitura e escrita'),
+  (1, 10, 'Matemática', 'Números e operações básicas'),
+  (1, 10, 'Ciências Naturais', 'Natureza e ambiente'),
+  (2, 10, 'Língua Portuguesa', 'Gramática e literatura'),
+  (2, 10, 'Matemática', 'Geometria e frações'),
+  (2, 10, 'História', 'História de Angola'),
+  (3, 10, 'Língua Portuguesa', 'Análise textual'),
+  (3, 10, 'Matemática', 'Álgebra e estatística'),
+  (3, 10, 'Física', 'Conceitos básicos'),
+  (3, 10, 'Química', 'Matéria e reações'),
+  (3, 10, 'Biologia', 'Vida e ecologia'),
+  (3, 10, 'História', 'História mundial'),
+  (3, 10, 'Geografia', 'Geografia de Angola'),
+  (4, 10, 'Língua Portuguesa', 'Literatura angolana'),
+  (4, 10, 'Matemática', 'Cálculo avançado'),
+  (4, 10, 'Física', 'Mecânica e eletricidade'),
+  (4, 10, 'Química', 'Química orgânica'),
+  (4, 10, 'Biologia', 'Genética e evolução'),
+  (4, 10, 'História', 'História contemporânea'),
+  (4, 10, 'Geografia', 'Geografia mundial'),
+  (4, 10, 'Inglês', 'Língua estrangeira'),
+  (4, 10, 'Educação Física', 'Saúde e desporto');
 
 INSERT INTO Usuarios (username, password, email, papel)
 VALUES (

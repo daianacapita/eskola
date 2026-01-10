@@ -16,6 +16,14 @@
         <option value="{{ curso['id'] }}">{{ curso['nome'] }}</option>
       {% endfor %}
     </select>
+
+    <label for="ano">Classe</label>
+    <select name="ano" id="ano" required>
+      <option value="">-- Escolher Classe --</option>
+      <option value="10">10</option>
+      <option value="11">11</option>
+      <option value="12">12</option>
+    </select>
     
     <label for="nome">Nome da Disciplina</label>
     <input name="nome" id="nome" required>

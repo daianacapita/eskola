@@ -45,19 +45,36 @@ def criar_disciplina():
     
     if request.method == 'POST':
         curso_id = request.form.get('curso_id')
+        ano = request.form.get('ano')
         nome = request.form.get('nome')
         descricao = request.form.get('descricao')
         
-        if not curso_id or not nome:
-            flash('Curso e nome são obrigatórios.')
+        if not curso_id or not ano or not nome:
+            flash('Curso, classe e nome são obrigatórios.')
+            return redirect(url_for('admin.criar_disciplina'))
+
+        try:
+            ano_int = int(ano)
+        except (TypeError, ValueError):
+            flash('Classe inválida.')
+            return redirect(url_for('admin.criar_disciplina'))
+
+        if ano_int < 10 or ano_int > 12:
+            flash('Classe inválida.')
             return redirect(url_for('admin.criar_disciplina'))
         
-        existing = db.execute('SELECT id FROM Disciplinas WHERE curso_id = ? AND nome = ?', (curso_id, nome)).fetchone()
+        existing = db.execute(
+            'SELECT id FROM Disciplinas WHERE curso_id = ? AND ano = ? AND nome = ?',
+            (curso_id, ano_int, nome)
+        ).fetchone()
         if existing:
-            flash('Disciplina já existe neste curso.')
+            flash('Disciplina já existe neste curso e classe.')
             return redirect(url_for('admin.criar_disciplina'))
         
-        db.execute('INSERT INTO Disciplinas (curso_id, nome, descricao) VALUES (?, ?, ?)', (curso_id, nome, descricao))
+        db.execute(
+            'INSERT INTO Disciplinas (curso_id, ano, nome, descricao) VALUES (?, ?, ?, ?)',
+            (curso_id, ano_int, nome, descricao)
+        )
         db.commit()
         flash('Disciplina criada com sucesso.')
         return redirect(url_for('admin.criar_disciplina'))
@@ -99,7 +116,10 @@ def criar_turma():
         turma_id = turma_id_row[0] if turma_id_row is not None else None
 
         if turma_id is not None:
-            disciplinas = db.execute('SELECT id FROM Disciplinas WHERE curso_id = ?', (curso_id,)).fetchall()
+            disciplinas = db.execute(
+                'SELECT id FROM Disciplinas WHERE curso_id = ? AND ano = ?',
+                (curso_id, ano)
+            ).fetchall()
             if disciplinas:
                 db.executemany(
                     'INSERT OR IGNORE INTO TurmaDisciplinas (turma_id, disciplina_id) VALUES (?, ?)',
@@ -134,6 +154,43 @@ def cursos():
     db = get_db()
     cursos = db.execute('SELECT * FROM Cursos').fetchall()
     return render_template('admin/cursos.html', cursos=cursos)
+
+
+@bp.route('/curso/<int:id>')
+@login_required
+def curso_detalhes(id):
+    if g.user['papel'] != 'admin':
+        flash('Acesso negado.')
+        return redirect(url_for('index'))
+
+    db = get_db()
+    curso = db.execute('SELECT * FROM Cursos WHERE id = ?', (id,)).fetchone()
+    if curso is None:
+        flash('Curso não encontrado.')
+        return redirect(url_for('admin.cursos'))
+
+    turmas = db.execute(
+        '''
+        SELECT t.id, t.ano, t.designacao, t.sala_aula, a.ano as ano_lectivo
+        FROM Turmas t
+        JOIN AnoLectivo a ON t.ano_lectivo_id = a.id
+        WHERE t.curso_id = ?
+        ORDER BY t.ano, a.ano DESC, t.designacao
+        ''',
+        (id,)
+    ).fetchall()
+
+    turmas_por_classe = {}
+    for turma in turmas:
+        turmas_por_classe.setdefault(turma['ano'], []).append(turma)
+
+    classes = sorted(turmas_por_classe.keys())
+    return render_template(
+        'admin/curso_detalhes.html',
+        curso=curso,
+        classes=classes,
+        turmas_por_classe=turmas_por_classe
+    )
 
 @bp.route('/deletar_curso/<int:id>', methods=['POST'])
 @login_required
@@ -229,8 +286,8 @@ def turma_detalhes(id):
     ''', (id,)).fetchall()
 
     total_curso_row = db.execute(
-        'SELECT COUNT(*) FROM Disciplinas WHERE curso_id = ?',
-        (turma['curso_id'],)
+        'SELECT COUNT(*) FROM Disciplinas WHERE curso_id = ? AND ano = ?',
+        (turma['curso_id'], turma['ano'])
     ).fetchone()
     total_curso = total_curso_row[0] if total_curso_row is not None else 0
 
@@ -258,7 +315,7 @@ def sync_disciplinas(id):
         return redirect(url_for('index'))
 
     db = get_db()
-    turma = db.execute('SELECT id, curso_id FROM Turmas WHERE id = ?', (id,)).fetchone()
+    turma = db.execute('SELECT id, curso_id, ano FROM Turmas WHERE id = ?', (id,)).fetchone()
     if turma is None:
         flash('Turma não encontrada.')
         return redirect(url_for('admin.turmas'))
@@ -268,9 +325,9 @@ def sync_disciplinas(id):
         INSERT OR IGNORE INTO TurmaDisciplinas (turma_id, disciplina_id)
         SELECT ?, d.id
         FROM Disciplinas d
-        WHERE d.curso_id = ?
+        WHERE d.curso_id = ? AND d.ano = ?
         ''',
-        (id, turma['curso_id'])
+        (id, turma['curso_id'], turma['ano'])
     )
     db.commit()
     flash('Disciplinas sincronizadas com sucesso.')
