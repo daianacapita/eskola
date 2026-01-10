@@ -2,8 +2,11 @@
 <title>{% block title %}{% endblock %} - Flaskr</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 <nav>
-  <h1>eskola</h1>
-  <ul>
+  <h1><a href="{{ url_for('index') }}">eskola</a></h1>
+  <button class="hamburger" aria-label="Menu">
+    &#9776;
+  </button>
+  <ul class="menu-dropdown">
     {% if g.user %}
       <li><span>{{ g.user['username'] }}</span>
       {% if g.user['papel'] == 'admin' %}
@@ -38,3 +41,10 @@
   {% endfor %}
   {% block content %}{% endblock %}
 </section>
+<footer style="margin-top: auto; padding: 1rem; text-align: center; background: #f8f9fa; border-top: 1px solid #dee2e6; color: #6c757d;">
+  <p>&copy; 2026 Eskola. Todos os direitos reservados.</p>
+</footer>
+<script src="{{ url_for('static', filename='main.js') }}"></script>
+</body>
+</html>
+<script src="{{ url_for('static', filename='main.js') }}"></script>

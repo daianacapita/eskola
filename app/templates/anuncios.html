@@ -11,14 +11,19 @@
   {% if g.user and g.user['papel'] == 'admin' %}
     <a href="{{ url_for('admin.criar_anuncio') }}">Adicionar Anúncio</a>
   {% endif %}
-  {% for anuncio in anuncios %}
-    <div>
-      <h3>{{ anuncio['titulo'] }}</h3>
-      <p>{{ anuncio['conteudo'] }}</p>
-      <small>Publicado em {{ anuncio['data_publicacao'] }}</small>
-    </div>
-  {% endfor %}
-  {% if not anuncios %}
-    <p>Nenhum anúncio disponível.</p>
-  {% endif %}
+  
+  <input type="text" id="search-anuncios" placeholder="Buscar anúncios...">
+  
+  <div class="anuncios-container">
+    {% for anuncio in anuncios %}
+      <div class="anuncio">
+        <h3>{{ anuncio['titulo'] }}</h3>
+        <p>{{ anuncio['conteudo'] }}</p>
+        <small>Publicado em {{ anuncio['data_publicacao'] }}</small>
+      </div>
+    {% endfor %}
+    {% if not anuncios %}
+      <p>Nenhum anúncio disponível.</p>
+    {% endif %}
+  </div>
 {% endblock %}

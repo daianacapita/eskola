@@ -1,4 +1,4 @@
-from flask import Flask, render_template, g, session
+from flask import Flask, render_template, g, session, jsonify, request
 import os
 from .db import get_db
 
@@ -57,5 +57,38 @@ def create_app(test_config=None):
         db = get_db()
         anuncios = db.execute('SELECT titulo, conteudo, data_publicacao FROM Anuncios ORDER BY data_publicacao DESC').fetchall()
         return render_template('anuncios.html', anuncios=anuncios)
+
+    @app.route('/api/anuncios')
+    def api_anuncios():
+        db = get_db()
+        page = int(request.args.get('page', 1))
+        search = request.args.get('search', '')
+        limit = 10
+        offset = (page - 1) * limit
+
+        query = 'SELECT titulo, conteudo, data_publicacao FROM Anuncios'
+        params = []
+        if search:
+            query += ' WHERE titulo LIKE ? OR conteudo LIKE ?'
+            params.extend([f'%{search}%', f'%{search}%'])
+        query += ' ORDER BY data_publicacao DESC LIMIT ? OFFSET ?'
+        params.extend([limit, offset])
+
+        anuncios = db.execute(query, params).fetchall()
+
+        # Check if there are more
+        next_offset = offset + limit
+        next_params = params[:-2] if search else []
+        next_params.extend([1, next_offset])
+        next_query = 'SELECT titulo FROM Anuncios'
+        if search:
+            next_query += ' WHERE titulo LIKE ? OR conteudo LIKE ?'
+        next_query += ' ORDER BY data_publicacao DESC LIMIT ? OFFSET ?'
+        has_more = bool(db.execute(next_query, next_params).fetchone())
+
+        return jsonify({
+            'anuncios': [dict(anuncio) for anuncio in anuncios],
+            'hasMore': has_more
+        })
     
     return app
