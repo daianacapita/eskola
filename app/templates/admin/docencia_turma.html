@@ -1,0 +1,53 @@
+<!doctype html>
+{% extends "base.html" %}
+
+{% block title %}Docência{% endblock %}
+
+{% block header %}
+  <h1>Docência - {{ turma['designacao'] }}</h1>
+{% endblock %}
+
+{% block content %}
+  <h2>Informações da Turma</h2>
+  <p><strong>Designação:</strong> {{ turma['designacao'] }}</p>
+  <p><strong>Classe:</strong> {{ turma['ano'] }}</p>
+  <p><strong>Curso:</strong> {{ turma['curso_nome'] }} - {{ turma['curso_descricao'] }}</p>
+  <p><strong>Ano Lectivo:</strong> {{ turma['ano_lectivo'] }}</p>
+
+  <p><strong>Disciplinas com professor:</strong> {{ total_atribuidas }} / {{ total_disciplinas }}</p>
+
+  <h2>Gerir Docência</h2>
+  <table border="1">
+    <thead>
+      <tr>
+        <th>Disciplina</th>
+        <th>Professor atual</th>
+        <th>Atribuir/Alterar</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for td in turma_disciplinas %}
+        <tr>
+          <td>{{ td['disciplina_nome'] }}</td>
+          <td>{{ td['professor_nome'] or 'Não atribuído' }}</td>
+          <td>
+            <form method="post" action="{{ url_for('admin.atribuir_docencia', id=turma['id']) }}">
+              <input type="hidden" name="turma_disciplina_id" value="{{ td['turma_disciplina_id'] }}">
+              <select name="professor_id" required>
+                <option value="">-- Selecionar Professor --</option>
+                {% for professor in professores %}
+                  <option value="{{ professor['id'] }}" {% if td['professor_id'] == professor['id'] %}selected{% endif %}>
+                    {{ professor['nome'] }}
+                  </option>
+                {% endfor %}
+              </select>
+              <button type="submit">Atribuir/Alterar</button>
+            </form>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <a href="{{ url_for('admin.turma_detalhes', id=turma['id']) }}">Voltar para detalhes da turma</a>
+{% endblock %}

@@ -11,6 +11,7 @@ DROP TABLE IF EXISTS Anuncios;
 DROP TABLE IF EXISTS Presencas;
 DROP TABLE IF EXISTS Aulas;
 DROP TABLE IF EXISTS Notas;
+DROP TABLE IF EXISTS NotasTrimestrais;
 DROP TABLE IF EXISTS Avaliacoes;
 DROP TABLE IF EXISTS Docencia;
 DROP TABLE IF EXISTS TurmaDisciplinas;
@@ -181,6 +182,17 @@ CREATE TABLE Notas (
   UNIQUE (avaliacao_id, matricula_id)
 );
 
+-- Notas por trimestre (3 trimestres por ano lectivo)
+CREATE TABLE NotasTrimestrais (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  matricula_id INTEGER NOT NULL REFERENCES Matriculas(id) ON DELETE CASCADE,
+  turma_disciplina_id INTEGER NOT NULL REFERENCES TurmaDisciplinas(id) ON DELETE CASCADE,
+  trimestre INTEGER NOT NULL CHECK(trimestre IN (1,2,3)),
+  nota REAL NOT NULL CHECK(nota >= 0 AND nota <= 20),
+  criado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE (matricula_id, turma_disciplina_id, trimestre)
+);
+
 -- ============================================================
 -- Aulas e Presenças (faltas)
 -- ============================================================
@@ -243,6 +255,9 @@ CREATE INDEX idx_docencia_turma_disciplina_id ON Docencia(turma_disciplina_id);
 CREATE INDEX idx_avaliacoes_turma_disciplina_id ON Avaliacoes(turma_disciplina_id);
 CREATE INDEX idx_notas_avaliacao_id ON Notas(avaliacao_id);
 CREATE INDEX idx_notas_matricula_id ON Notas(matricula_id);
+
+CREATE INDEX idx_notas_tri_matricula ON NotasTrimestrais(matricula_id);
+CREATE INDEX idx_notas_tri_turma_disciplina ON NotasTrimestrais(turma_disciplina_id);
 
 CREATE INDEX idx_aulas_turma_disciplina_id ON Aulas(turma_disciplina_id);
 CREATE INDEX idx_presencas_aula_id ON Presencas(aula_id);

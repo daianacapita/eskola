@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, g, request, flash, redirect, url_for
+from flask import Blueprint, render_template, g, request, flash, redirect, url_for, session
 from app.auth import login_required
 from app.db import get_db
 
@@ -333,6 +333,10 @@ def turma_detalhes(id):
         (id,)
     ).fetchone()
     total_atribuidas = total_atribuidas_row[0] if total_atribuidas_row is not None else 0
+
+    notas_trimestre_default = session.get('admin_notas_trimestre', 1)
+    if notas_trimestre_default not in (1, 2, 3):
+        notas_trimestre_default = 1
     
     return render_template(
         'admin/turma_detalhes.html',
@@ -340,8 +344,306 @@ def turma_detalhes(id):
         alunos=alunos,
         disciplinas=disciplinas,
         total_curso=total_curso,
+        total_atribuidas=total_atribuidas,
+        notas_trimestre_default=notas_trimestre_default
+    )
+
+
+@bp.route('/turma/<int:id>/notas')
+@login_required
+def notas_turma(id):
+    if g.user['papel'] != 'admin':
+        flash('Acesso negado.')
+        return redirect(url_for('index'))
+
+    trimestre = request.args.get('trimestre')
+    if trimestre is None:
+        trimestre_int = session.get('admin_notas_trimestre', 1)
+    else:
+        try:
+            trimestre_int = int(trimestre)
+        except (TypeError, ValueError):
+            trimestre_int = 1
+    if trimestre_int not in (1, 2, 3):
+        trimestre_int = 1
+
+    session['admin_notas_trimestre'] = trimestre_int
+
+    db = get_db()
+    turma = db.execute('''
+        SELECT t.*, c.nome as curso_nome, c.descricao as curso_descricao, a.ano as ano_lectivo
+        FROM Turmas t
+        JOIN Cursos c ON t.curso_id = c.id
+        JOIN AnoLectivo a ON t.ano_lectivo_id = a.id
+        WHERE t.id = ?
+    ''', (id,)).fetchone()
+
+    if turma is None:
+        flash('Turma não encontrada.')
+        return redirect(url_for('admin.turmas'))
+
+    matriculas = db.execute('''
+        SELECT m.id as matricula_id, a.id as aluno_id, a.nome
+        FROM Matriculas m
+        JOIN Alunos a ON a.id = m.aluno_id
+        WHERE m.turma_id = ? AND m.status = 'ativa'
+        ORDER BY a.nome
+    ''', (id,)).fetchall()
+
+    turma_disciplinas = db.execute('''
+        SELECT td.id as turma_disciplina_id, d.nome as disciplina_nome
+        FROM TurmaDisciplinas td
+        JOIN Disciplinas d ON d.id = td.disciplina_id
+        WHERE td.turma_id = ?
+        ORDER BY d.nome
+    ''', (id,)).fetchall()
+
+    notas_rows = db.execute('''
+        SELECT nt.matricula_id, nt.turma_disciplina_id, nt.trimestre, nt.nota
+        FROM NotasTrimestrais nt
+        JOIN Matriculas m ON m.id = nt.matricula_id
+        JOIN TurmaDisciplinas td ON td.id = nt.turma_disciplina_id
+        WHERE m.turma_id = ? AND td.turma_id = ? AND nt.trimestre = ?
+    ''', (id, id, trimestre_int)).fetchall()
+
+    notas = {}
+    for row in notas_rows:
+        notas[(row['matricula_id'], row['turma_disciplina_id'])] = row['nota']
+
+    total_esperado = len(matriculas) * len(turma_disciplinas)
+    total_preenchido = len(notas)
+
+    return render_template(
+        'admin/notas_turma.html',
+        turma=turma,
+        trimestre=trimestre_int,
+        matriculas=matriculas,
+        turma_disciplinas=turma_disciplinas,
+        notas=notas,
+        total_esperado=total_esperado,
+        total_preenchido=total_preenchido
+    )
+
+
+@bp.route('/turma/<int:id>/notas/salvar', methods=['POST'])
+@login_required
+def salvar_notas_turma(id):
+    if g.user['papel'] != 'admin':
+        flash('Acesso negado.')
+        return redirect(url_for('index'))
+
+    trimestre = request.form.get('trimestre')
+    try:
+        trimestre_int = int(trimestre)
+    except (TypeError, ValueError):
+        flash('Trimestre inválido.')
+        return redirect(url_for('admin.notas_turma', id=id))
+
+    if trimestre_int not in (1, 2, 3):
+        flash('Trimestre inválido.')
+        return redirect(url_for('admin.notas_turma', id=id))
+
+    db = get_db()
+    turma = db.execute('SELECT id FROM Turmas WHERE id = ?', (id,)).fetchone()
+    if turma is None:
+        flash('Turma não encontrada.')
+        return redirect(url_for('admin.turmas'))
+
+    valid_matriculas_rows = db.execute(
+        "SELECT id FROM Matriculas WHERE turma_id = ? AND status = 'ativa'",
+        (id,)
+    ).fetchall()
+    valid_matriculas = {row['id'] for row in valid_matriculas_rows}
+
+    valid_td_rows = db.execute(
+        'SELECT id FROM TurmaDisciplinas WHERE turma_id = ?',
+        (id,)
+    ).fetchall()
+    valid_turma_disciplinas = {row['id'] for row in valid_td_rows}
+
+    for key, value in request.form.items():
+        if not key.startswith('nota-'):
+            continue
+
+        parts = key.split('-', 2)
+        if len(parts) != 3:
+            continue
+
+        try:
+            matricula_id = int(parts[1])
+            turma_disciplina_id = int(parts[2])
+        except (TypeError, ValueError):
+            flash('Dados inválidos nas notas.')
+            return redirect(url_for('admin.notas_turma', id=id, trimestre=trimestre_int))
+
+        if matricula_id not in valid_matriculas or turma_disciplina_id not in valid_turma_disciplinas:
+            continue
+
+        raw = (value or '').strip()
+        if raw == '':
+            db.execute(
+                'DELETE FROM NotasTrimestrais WHERE matricula_id = ? AND turma_disciplina_id = ? AND trimestre = ?',
+                (matricula_id, turma_disciplina_id, trimestre_int)
+            )
+            continue
+
+        try:
+            nota = float(raw.replace(',', '.'))
+        except ValueError:
+            flash('Nota inválida. Use um número entre 0 e 20.')
+            return redirect(url_for('admin.notas_turma', id=id, trimestre=trimestre_int))
+
+        if nota < 0 or nota > 20:
+            flash('Nota inválida. Use um número entre 0 e 20.')
+            return redirect(url_for('admin.notas_turma', id=id, trimestre=trimestre_int))
+
+        try:
+            db.execute(
+                '''
+                INSERT INTO NotasTrimestrais (matricula_id, turma_disciplina_id, trimestre, nota)
+                VALUES (?, ?, ?, ?)
+                ON CONFLICT(matricula_id, turma_disciplina_id, trimestre)
+                DO UPDATE SET nota = excluded.nota
+                ''',
+                (matricula_id, turma_disciplina_id, trimestre_int, nota)
+            )
+        except Exception:
+            try:
+                db.execute(
+                    'INSERT INTO NotasTrimestrais (matricula_id, turma_disciplina_id, trimestre, nota) VALUES (?, ?, ?, ?)',
+                    (matricula_id, turma_disciplina_id, trimestre_int, nota)
+                )
+            except Exception:
+                db.execute(
+                    'UPDATE NotasTrimestrais SET nota = ? WHERE matricula_id = ? AND turma_disciplina_id = ? AND trimestre = ?',
+                    (nota, matricula_id, turma_disciplina_id, trimestre_int)
+                )
+
+    db.commit()
+    flash(f'Notas do {trimestre_int}º trimestre salvas com sucesso.')
+    return redirect(url_for('admin.notas_turma', id=id, trimestre=trimestre_int))
+
+
+@bp.route('/turma/<int:id>/docencia')
+@login_required
+def docencia_turma(id):
+    if g.user['papel'] != 'admin':
+        flash('Acesso negado.')
+        return redirect(url_for('index'))
+
+    db = get_db()
+    turma = db.execute('''
+        SELECT t.*, c.nome as curso_nome, c.descricao as curso_descricao, a.ano as ano_lectivo
+        FROM Turmas t
+        JOIN Cursos c ON t.curso_id = c.id
+        JOIN AnoLectivo a ON t.ano_lectivo_id = a.id
+        WHERE t.id = ?
+    ''', (id,)).fetchone()
+
+    if turma is None:
+        flash('Turma não encontrada.')
+        return redirect(url_for('admin.turmas'))
+
+    turma_disciplinas = db.execute('''
+        SELECT
+            td.id as turma_disciplina_id,
+            d.nome as disciplina_nome,
+            p.id as professor_id,
+            p.nome as professor_nome
+        FROM TurmaDisciplinas td
+        JOIN Disciplinas d ON d.id = td.disciplina_id
+        LEFT JOIN Docencia doc
+            ON doc.turma_disciplina_id = td.id
+            AND doc.data_fim IS NULL
+        LEFT JOIN Professores p
+            ON p.id = doc.professor_id
+        WHERE td.turma_id = ?
+        ORDER BY d.nome
+    ''', (id,)).fetchall()
+
+    professores = db.execute(
+        'SELECT id, nome FROM Professores ORDER BY nome'
+    ).fetchall()
+
+    total_disciplinas = len(turma_disciplinas)
+    total_atribuidas = sum(1 for row in turma_disciplinas if row['professor_id'] is not None)
+
+    return render_template(
+        'admin/docencia_turma.html',
+        turma=turma,
+        turma_disciplinas=turma_disciplinas,
+        professores=professores,
+        total_disciplinas=total_disciplinas,
         total_atribuidas=total_atribuidas
     )
+
+
+@bp.route('/turma/<int:id>/docencia/atribuir', methods=['POST'])
+@login_required
+def atribuir_docencia(id):
+    if g.user['papel'] != 'admin':
+        flash('Acesso negado.')
+        return redirect(url_for('index'))
+
+    turma_disciplina_id = request.form.get('turma_disciplina_id')
+    professor_id = request.form.get('professor_id')
+
+    if not turma_disciplina_id or not professor_id:
+        flash('Selecione uma disciplina e um professor.')
+        return redirect(url_for('admin.docencia_turma', id=id))
+
+    try:
+        turma_disciplina_id_int = int(turma_disciplina_id)
+        professor_id_int = int(professor_id)
+    except (TypeError, ValueError):
+        flash('Dados inválidos.')
+        return redirect(url_for('admin.docencia_turma', id=id))
+
+    db = get_db()
+
+    td = db.execute(
+        'SELECT id FROM TurmaDisciplinas WHERE id = ? AND turma_id = ?',
+        (turma_disciplina_id_int, id)
+    ).fetchone()
+    if td is None:
+        flash('Disciplina não pertence à turma.')
+        return redirect(url_for('admin.docencia_turma', id=id))
+
+    prof = db.execute(
+        'SELECT id FROM Professores WHERE id = ?',
+        (professor_id_int,)
+    ).fetchone()
+    if prof is None:
+        flash('Professor não encontrado.')
+        return redirect(url_for('admin.docencia_turma', id=id))
+
+    current = db.execute(
+        'SELECT professor_id FROM Docencia WHERE turma_disciplina_id = ? AND data_fim IS NULL',
+        (turma_disciplina_id_int,)
+    ).fetchone()
+    if current is not None and current['professor_id'] == professor_id_int:
+        flash('Professor já está atribuído a esta disciplina.')
+        return redirect(url_for('admin.docencia_turma', id=id))
+
+    db.execute(
+        'UPDATE Docencia SET data_fim = CURRENT_DATE WHERE turma_disciplina_id = ? AND data_fim IS NULL',
+        (turma_disciplina_id_int,)
+    )
+
+    try:
+        db.execute(
+            'INSERT INTO Docencia (turma_disciplina_id, professor_id, data_inicio) VALUES (?, ?, CURRENT_DATE)',
+            (turma_disciplina_id_int, professor_id_int)
+        )
+    except Exception:
+        db.execute(
+            "INSERT INTO Docencia (turma_disciplina_id, professor_id, data_inicio) VALUES (?, ?, datetime('now','localtime'))",
+            (turma_disciplina_id_int, professor_id_int)
+        )
+
+    db.commit()
+    flash('Professor atribuído com sucesso.')
+    return redirect(url_for('admin.docencia_turma', id=id))
 
 
 @bp.route('/turma/<int:id>/sync_disciplinas', methods=['POST'])
