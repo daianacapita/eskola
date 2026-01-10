@@ -259,8 +259,32 @@ def turmas():
         FROM Turmas t 
         JOIN Cursos c ON t.curso_id = c.id
         JOIN AnoLectivo a ON t.ano_lectivo_id = a.id
+        ORDER BY c.nome, t.ano, a.ano DESC, t.designacao
     ''').fetchall()
-    return render_template('admin/turmas.html', turmas=turmas)
+
+    turmas_por_curso = {}
+    for turma in turmas:
+        curso_id = turma['curso_id']
+        if curso_id not in turmas_por_curso:
+            turmas_por_curso[curso_id] = {
+                'curso_id': curso_id,
+                'curso_nome': turma['curso_nome'],
+                'classes': {}
+            }
+        turmas_por_curso[curso_id]['classes'].setdefault(turma['ano'], []).append(turma)
+
+    cursos_agrupados = []
+    for curso in sorted(turmas_por_curso.values(), key=lambda x: x['curso_nome']):
+        classes_ordenadas = []
+        for classe in sorted(curso['classes'].keys()):
+            classes_ordenadas.append({'ano': classe, 'turmas': curso['classes'][classe]})
+        cursos_agrupados.append({
+            'curso_id': curso['curso_id'],
+            'curso_nome': curso['curso_nome'],
+            'classes': classes_ordenadas
+        })
+
+    return render_template('admin/turmas.html', cursos=cursos_agrupados)
 
 @bp.route('/turma/<int:id>')
 @login_required
