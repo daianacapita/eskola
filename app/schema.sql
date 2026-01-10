@@ -14,6 +14,7 @@ DROP TABLE IF EXISTS Notas;
 DROP TABLE IF EXISTS NotasTrimestrais;
 DROP TABLE IF EXISTS Avaliacoes;
 DROP TABLE IF EXISTS Docencia;
+DROP TABLE IF EXISTS Horarios;
 DROP TABLE IF EXISTS TurmaDisciplinas;
 DROP TABLE IF EXISTS Matriculas;
 DROP TABLE IF EXISTS Turmas;
@@ -121,6 +122,8 @@ CREATE TABLE Turmas (
   curso_id INTEGER NOT NULL REFERENCES Cursos(id) ON DELETE RESTRICT,
   ano_lectivo_id INTEGER NOT NULL REFERENCES AnoLectivo(id) ON DELETE RESTRICT,
   ano INTEGER NOT NULL CHECK(ano >= 10 AND ano <= 12),
+  periodo TEXT NOT NULL DEFAULT 'matinal'
+    CHECK(periodo IN ('matinal','vespertino','pos_laboral')),
   sala_aula TEXT,
   designacao TEXT NOT NULL DEFAULT '', -- ex: "10A", "12B" (opcional)
   UNIQUE (curso_id, ano_lectivo_id, ano, designacao)
@@ -143,6 +146,15 @@ CREATE TABLE TurmaDisciplinas (
   turma_id INTEGER NOT NULL REFERENCES Turmas(id) ON DELETE CASCADE,
   disciplina_id INTEGER NOT NULL REFERENCES Disciplinas(id) ON DELETE RESTRICT,
   UNIQUE (turma_id, disciplina_id)
+);
+
+CREATE TABLE Horarios (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  turma_id INTEGER NOT NULL REFERENCES Turmas(id) ON DELETE CASCADE,
+  turma_disciplina_id INTEGER NOT NULL REFERENCES TurmaDisciplinas(id) ON DELETE CASCADE,
+  dia_semana INTEGER NOT NULL CHECK(dia_semana IN (1,2,3,4,5)), -- 1=Seg ... 5=Sex
+  tempo INTEGER NOT NULL CHECK(tempo >= 1 AND tempo <= 20),
+  UNIQUE(turma_id, dia_semana, tempo)
 );
 
 -- Quem lecciona o quê (professor por disciplina/turma)
@@ -258,6 +270,9 @@ CREATE INDEX idx_notas_matricula_id ON Notas(matricula_id);
 
 CREATE INDEX idx_notas_tri_matricula ON NotasTrimestrais(matricula_id);
 CREATE INDEX idx_notas_tri_turma_disciplina ON NotasTrimestrais(turma_disciplina_id);
+
+CREATE INDEX idx_horarios_turma_id ON Horarios(turma_id);
+CREATE INDEX idx_horarios_td_id ON Horarios(turma_disciplina_id);
 
 CREATE INDEX idx_aulas_turma_disciplina_id ON Aulas(turma_disciplina_id);
 CREATE INDEX idx_presencas_aula_id ON Presencas(aula_id);

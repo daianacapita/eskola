@@ -1,0 +1,72 @@
+<!doctype html>
+{% extends "base.html" %}
+
+{% block title %}Horário da Turma{% endblock %}
+
+{% block header %}
+  <h1>Horário: {{ turma['designacao'] }}</h1>
+{% endblock %}
+
+{% block content %}
+  <h2>Informações</h2>
+  <p><strong>Curso:</strong> {{ turma['curso_nome'] }}</p>
+  <p><strong>Classe:</strong> {{ turma['ano'] }}</p>
+  <p><strong>Ano Lectivo:</strong> {{ turma['ano_lectivo'] }}</p>
+  <p><strong>Período:</strong> {{ turma['periodo'] }}</p>
+
+  <h2>Grade Semanal</h2>
+
+  <table border="1">
+    <thead>
+      <tr>
+        <th>Tempo</th>
+        <th>Seg</th>
+        <th>Ter</th>
+        <th>Qua</th>
+        <th>Qui</th>
+        <th>Sex</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for t in tempos %}
+        <tr>
+          <td>{{ t['label'] }}</td>
+
+          {% for dia in [1,2,3,4,5] %}
+            {% set td_id = slots.get((dia, t['tempo'])) %}
+            <td>
+              {% if td_id %}
+                <div><strong>{{ td_nome.get(td_id, '—') }}</strong></div>
+                <form method="post" action="{{ url_for('admin.remover_horario', id=turma['id']) }}" style="margin-top: 4px;">
+                  <input type="hidden" name="dia_semana" value="{{ dia }}">
+                  <input type="hidden" name="tempo" value="{{ t['tempo'] }}">
+                  <button type="submit">Remover</button>
+                </form>
+                <hr>
+              {% endif %}
+
+              <form method="post" action="{{ url_for('admin.atribuir_horario', id=turma['id']) }}">
+                <input type="hidden" name="dia_semana" value="{{ dia }}">
+                <input type="hidden" name="tempo" value="{{ t['tempo'] }}">
+
+                <select name="turma_disciplina_id" required>
+                  <option value="">-- Disciplina --</option>
+                  {% for d in turma_disciplinas %}
+                    <option value="{{ d['turma_disciplina_id'] }}" {% if td_id and d['turma_disciplina_id'] == td_id %}selected{% endif %}>
+                      {{ d['nome'] }}
+                    </option>
+                  {% endfor %}
+                </select>
+                <button type="submit">Salvar</button>
+              </form>
+            </td>
+          {% endfor %}
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <p>
+    <a href="{{ url_for('admin.turma_detalhes', id=turma['id']) }}">Voltar para a turma</a>
+  </p>
+{% endblock %}
