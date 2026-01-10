@@ -1,0 +1,26 @@
+<!doctype html>
+{% extends "base.html" %}
+
+{% block title %}Área do Professor{% endblock %}
+
+{% block header %}
+  <h1>Área do Professor</h1>
+{% endblock %}
+
+{% block content %}
+  <h2>Minhas Docências Ativas</h2>
+
+  {% if docencias %}
+    <ul>
+      {% for item in docencias %}
+        <li>
+          {{ item['curso_nome'] }} - Classe {{ item['ano'] }} - {{ item['designacao'] }} ({{ item['ano_lectivo'] }})
+          - {{ item['disciplina_nome'] }}
+          - <a href="{{ url_for('professor.notas_disciplina', turma_disciplina_id=item['turma_disciplina_id'], trimestre=1) }}">Lançar notas</a>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>Sem docências ativas no momento.</p>
+  {% endif %}
+{% endblock %}

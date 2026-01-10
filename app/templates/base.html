@@ -14,8 +14,8 @@
         <li><a href="{{ url_for('admin.matricular') }}">Matrículas</a>       
         <li><a href="{{ url_for('auth.register') }}">Register</a>
       {% endif %}
-      {%if g.user['papel'] == 'professor' %}
-        <li><a href="{{ url_for('teacher.teacher_area') }}">Área do Professor</a>
+      {% if g.user['papel'] == 'professor' %}
+        <li><a href="{{ url_for('professor.index') }}">Área do Professor</a>
       {% endif %}
       {% if g.user['papel'] == 'aluno' %}
         <li><a href="{{ url_for('student.student_area') }}">Área do Estudante</a>
