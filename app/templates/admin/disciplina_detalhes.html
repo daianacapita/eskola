@@ -1,0 +1,61 @@
+<!doctype html>
+{% extends "base.html" %}
+
+{% block title %}Detalhes da Disciplina{% endblock %}
+
+{% block header %}
+  <h1>Disciplina: {{ disciplina['nome'] }}</h1>
+{% endblock %}
+
+{% block content %}
+  <h2>Informações</h2>
+  <p><strong>Curso:</strong> {{ disciplina['curso_nome'] }}</p>
+  <p><strong>Classe:</strong> {{ disciplina['ano'] }}</p>
+  <p><strong>Descrição:</strong> {{ disciplina['descricao'] or '—' }}</p>
+
+  <h2>Carga semanal</h2>
+  <p>
+    <strong>Atual:</strong>
+    {{ disciplina['carga_semanal'] }} tempos ({{ carga_min }} min / {{ carga_hhmm }})
+  </p>
+
+  <form method="post" action="{{ url_for('admin.atualizar_carga_disciplina', id=disciplina['id']) }}">
+    <label for="carga_semanal">Editar carga semanal (tempos de 45min)</label>
+    <input type="number" name="carga_semanal" id="carga_semanal" min="1" max="15" value="{{ disciplina['carga_semanal'] }}" required>
+    <button type="submit">Salvar</button>
+  </form>
+
+  <h2>Turmas onde está alocada</h2>
+  {% if turmas %}
+    <table border="1">
+      <thead>
+        <tr>
+          <th>Turma</th>
+          <th>Classe</th>
+          <th>Ano Lectivo</th>
+          <th>Período</th>
+          <th>Professor</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in turmas %}
+          <tr>
+            <td>
+              <a href="{{ url_for('admin.turma_detalhes', id=t['turma_id']) }}">{{ t['designacao'] }}</a>
+            </td>
+            <td>{{ t['ano'] }}</td>
+            <td>{{ t['ano_lectivo'] }}</td>
+            <td>{{ t['periodo'] }}</td>
+            <td>{{ t['professor_nome'] or 'Não atribuído' }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p>Esta disciplina ainda não está alocada a nenhuma turma.</p>
+  {% endif %}
+
+  <p>
+    <a href="{{ url_for('admin.disciplinas') }}">Voltar para Disciplinas</a>
+  </p>
+{% endblock %}

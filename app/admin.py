@@ -294,6 +294,92 @@ def disciplinas():
     ''').fetchall()
     return render_template('admin/disciplinas.html', disciplinas=disciplinas)
 
+
+@bp.route('/disciplina/<int:id>')
+@login_required
+def disciplina_detalhes(id):
+    if g.user['papel'] != 'admin':
+        flash('Acesso negado.')
+        return redirect(url_for('index'))
+
+    db = get_db()
+    disciplina = db.execute(
+        '''
+        SELECT d.*, c.nome as curso_nome
+        FROM Disciplinas d
+        JOIN Cursos c ON c.id = d.curso_id
+        WHERE d.id = ?
+        ''',
+        (id,)
+    ).fetchone()
+
+    if disciplina is None:
+        flash('Disciplina não encontrada.')
+        return redirect(url_for('admin.disciplinas'))
+
+    turmas = db.execute(
+        '''
+        SELECT
+          t.id as turma_id,
+          t.designacao,
+          t.ano,
+          t.periodo,
+          a.ano as ano_lectivo,
+          p.nome as professor_nome
+        FROM TurmaDisciplinas td
+        JOIN Turmas t ON t.id = td.turma_id
+        JOIN AnoLectivo a ON a.id = t.ano_lectivo_id
+        LEFT JOIN Docencia doc ON doc.turma_disciplina_id = td.id AND doc.data_fim IS NULL
+        LEFT JOIN Professores p ON p.id = doc.professor_id
+        WHERE td.disciplina_id = ?
+        ORDER BY a.ano DESC, t.ano, t.designacao
+        ''',
+        (id,)
+    ).fetchall()
+
+    carga_min = (disciplina['carga_semanal'] or 1) * 45
+    hh = carga_min // 60
+    mm = carga_min % 60
+    carga_hhmm = f'{hh:02d}:{mm:02d}'
+
+    return render_template(
+        'admin/disciplina_detalhes.html',
+        disciplina=disciplina,
+        turmas=turmas,
+        carga_min=carga_min,
+        carga_hhmm=carga_hhmm
+    )
+
+
+@bp.route('/disciplina/<int:id>/atualizar_carga', methods=['POST'])
+@login_required
+def atualizar_carga_disciplina(id):
+    if g.user['papel'] != 'admin':
+        flash('Acesso negado.')
+        return redirect(url_for('index'))
+
+    carga_semanal = request.form.get('carga_semanal', '1')
+    try:
+        carga_int = int(carga_semanal)
+    except (TypeError, ValueError):
+        flash('Carga semanal inválida.')
+        return redirect(url_for('admin.disciplina_detalhes', id=id))
+
+    if carga_int < 1 or carga_int > 15:
+        flash('Carga semanal inválida. Use um valor entre 1 e 15.')
+        return redirect(url_for('admin.disciplina_detalhes', id=id))
+
+    db = get_db()
+    existe = db.execute('SELECT id FROM Disciplinas WHERE id = ?', (id,)).fetchone()
+    if existe is None:
+        flash('Disciplina não encontrada.')
+        return redirect(url_for('admin.disciplinas'))
+
+    db.execute('UPDATE Disciplinas SET carga_semanal = ? WHERE id = ?', (carga_int, id))
+    db.commit()
+    flash('Carga semanal atualizada.')
+    return redirect(url_for('admin.disciplina_detalhes', id=id))
+
 @bp.route('/deletar_disciplina/<int:id>', methods=['POST'])
 @login_required
 def deletar_disciplina(id):
