@@ -344,6 +344,128 @@ def turma_detalhes(id):
     )
 
 
+@bp.route('/turma/<int:id>/docencia')
+@login_required
+def docencia_turma(id):
+    if g.user['papel'] != 'admin':
+        flash('Acesso negado.')
+        return redirect(url_for('index'))
+
+    db = get_db()
+    turma = db.execute('''
+        SELECT t.*, c.nome as curso_nome, c.descricao as curso_descricao, a.ano as ano_lectivo
+        FROM Turmas t
+        JOIN Cursos c ON t.curso_id = c.id
+        JOIN AnoLectivo a ON t.ano_lectivo_id = a.id
+        WHERE t.id = ?
+    ''', (id,)).fetchone()
+
+    if turma is None:
+        flash('Turma não encontrada.')
+        return redirect(url_for('admin.turmas'))
+
+    turma_disciplinas = db.execute('''
+        SELECT
+            td.id as turma_disciplina_id,
+            d.nome as disciplina_nome,
+            p.id as professor_id,
+            p.nome as professor_nome
+        FROM TurmaDisciplinas td
+        JOIN Disciplinas d ON d.id = td.disciplina_id
+        LEFT JOIN Docencia doc
+            ON doc.turma_disciplina_id = td.id
+            AND doc.data_fim IS NULL
+        LEFT JOIN Professores p
+            ON p.id = doc.professor_id
+        WHERE td.turma_id = ?
+        ORDER BY d.nome
+    ''', (id,)).fetchall()
+
+    professores = db.execute(
+        'SELECT id, nome FROM Professores ORDER BY nome'
+    ).fetchall()
+
+    total_disciplinas = len(turma_disciplinas)
+    total_atribuidas = sum(1 for row in turma_disciplinas if row['professor_id'] is not None)
+
+    return render_template(
+        'admin/docencia_turma.html',
+        turma=turma,
+        turma_disciplinas=turma_disciplinas,
+        professores=professores,
+        total_disciplinas=total_disciplinas,
+        total_atribuidas=total_atribuidas
+    )
+
+
+@bp.route('/turma/<int:id>/docencia/atribuir', methods=['POST'])
+@login_required
+def atribuir_docencia(id):
+    if g.user['papel'] != 'admin':
+        flash('Acesso negado.')
+        return redirect(url_for('index'))
+
+    turma_disciplina_id = request.form.get('turma_disciplina_id')
+    professor_id = request.form.get('professor_id')
+
+    if not turma_disciplina_id or not professor_id:
+        flash('Selecione uma disciplina e um professor.')
+        return redirect(url_for('admin.docencia_turma', id=id))
+
+    try:
+        turma_disciplina_id_int = int(turma_disciplina_id)
+        professor_id_int = int(professor_id)
+    except (TypeError, ValueError):
+        flash('Dados inválidos.')
+        return redirect(url_for('admin.docencia_turma', id=id))
+
+    db = get_db()
+
+    td = db.execute(
+        'SELECT id FROM TurmaDisciplinas WHERE id = ? AND turma_id = ?',
+        (turma_disciplina_id_int, id)
+    ).fetchone()
+    if td is None:
+        flash('Disciplina não pertence à turma.')
+        return redirect(url_for('admin.docencia_turma', id=id))
+
+    prof = db.execute(
+        'SELECT id FROM Professores WHERE id = ?',
+        (professor_id_int,)
+    ).fetchone()
+    if prof is None:
+        flash('Professor não encontrado.')
+        return redirect(url_for('admin.docencia_turma', id=id))
+
+    current = db.execute(
+        'SELECT professor_id FROM Docencia WHERE turma_disciplina_id = ? AND data_fim IS NULL',
+        (turma_disciplina_id_int,)
+    ).fetchone()
+    if current is not None and current['professor_id'] == professor_id_int:
+        flash('Professor já está atribuído a esta disciplina.')
+        return redirect(url_for('admin.docencia_turma', id=id))
+
+    db.execute(
+        'UPDATE Docencia SET data_fim = CURRENT_DATE WHERE turma_disciplina_id = ? AND data_fim IS NULL',
+        (turma_disciplina_id_int,)
+    )
+
+    try:
+        db.execute(
+            'INSERT INTO Docencia (turma_disciplina_id, professor_id, data_inicio) VALUES (?, ?, CURRENT_DATE)',
+            (turma_disciplina_id_int, professor_id_int)
+        )
+    except Exception:
+        db.execute(
+            "INSERT INTO Docencia (turma_disciplina_id, professor_id, data_inicio) VALUES (?, ?, datetime('now','localtime'))",
+            (turma_disciplina_id_int, professor_id_int)
+        )
+
+    db.commit()
+    flash('Professor atribuído com sucesso.')
+    return redirect(url_for('admin.docencia_turma', id=id))
+
+
 @bp.route('/turma/<int:id>/sync_disciplinas', methods=['POST'])
 @login_required
 def sync_disciplinas(id):
