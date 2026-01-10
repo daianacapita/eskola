@@ -16,6 +16,14 @@
   <p><strong>Sala de Aula:</strong> {{ turma['sala_aula'] or 'Não definida' }}</p>
 
   <h2>Disciplinas</h2>
+  <p><strong>Disciplinas atribuídas:</strong> {{ total_atribuidas }} / {{ total_curso }}</p>
+
+  {% if total_atribuidas < total_curso %}
+    <form method="post" action="{{ url_for('admin.sync_disciplinas', id=turma['id']) }}">
+      <button type="submit">Sincronizar disciplinas do curso</button>
+    </form>
+  {% endif %}
+
   <ul>
     {% for disciplina in disciplinas %}
       <li>{{ disciplina['nome'] }} - {{ disciplina['descricao'] }}</li>

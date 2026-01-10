@@ -94,6 +94,18 @@ def criar_turma():
         
         db.execute('INSERT INTO Turmas (curso_id, ano_lectivo_id, ano, sala_aula, designacao) VALUES (?, ?, ?, ?, ?)', 
                    (curso_id, ano_lectivo_id, ano, sala_aula, designacao))
+
+        turma_id_row = db.execute('SELECT last_insert_rowid()').fetchone()
+        turma_id = turma_id_row[0] if turma_id_row is not None else None
+
+        if turma_id is not None:
+            disciplinas = db.execute('SELECT id FROM Disciplinas WHERE curso_id = ?', (curso_id,)).fetchall()
+            if disciplinas:
+                db.executemany(
+                    'INSERT OR IGNORE INTO TurmaDisciplinas (turma_id, disciplina_id) VALUES (?, ?)',
+                    [(turma_id, d['id']) for d in disciplinas]
+                )
+
         db.commit()
         flash('Turma criada com sucesso.')
         return redirect(url_for('admin.criar_turma'))
@@ -215,8 +227,54 @@ def turma_detalhes(id):
         WHERE td.turma_id = ?
         ORDER BY d.nome
     ''', (id,)).fetchall()
+
+    total_curso_row = db.execute(
+        'SELECT COUNT(*) FROM Disciplinas WHERE curso_id = ?',
+        (turma['curso_id'],)
+    ).fetchone()
+    total_curso = total_curso_row[0] if total_curso_row is not None else 0
+
+    total_atribuidas_row = db.execute(
+        'SELECT COUNT(*) FROM TurmaDisciplinas WHERE turma_id = ?',
+        (id,)
+    ).fetchone()
+    total_atribuidas = total_atribuidas_row[0] if total_atribuidas_row is not None else 0
     
-    return render_template('admin/turma_detalhes.html', turma=turma, alunos=alunos, disciplinas=disciplinas)
+    return render_template(
+        'admin/turma_detalhes.html',
+        turma=turma,
+        alunos=alunos,
+        disciplinas=disciplinas,
+        total_curso=total_curso,
+        total_atribuidas=total_atribuidas
+    )
+
+
+@bp.route('/turma/<int:id>/sync_disciplinas', methods=['POST'])
+@login_required
+def sync_disciplinas(id):
+    if g.user['papel'] != 'admin':
+        flash('Acesso negado.')
+        return redirect(url_for('index'))
+
+    db = get_db()
+    turma = db.execute('SELECT id, curso_id FROM Turmas WHERE id = ?', (id,)).fetchone()
+    if turma is None:
+        flash('Turma não encontrada.')
+        return redirect(url_for('admin.turmas'))
+
+    db.execute(
+        '''
+        INSERT OR IGNORE INTO TurmaDisciplinas (turma_id, disciplina_id)
+        SELECT ?, d.id
+        FROM Disciplinas d
+        WHERE d.curso_id = ?
+        ''',
+        (id, turma['curso_id'])
+    )
+    db.commit()
+    flash('Disciplinas sincronizadas com sucesso.')
+    return redirect(url_for('admin.turma_detalhes', id=id))
 
 @bp.route('/deletar_turma/<int:id>', methods=['POST'])
 @login_required
