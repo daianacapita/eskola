@@ -102,15 +102,28 @@ def criar_turma():
         if not curso_id or not ano_lectivo_id or not ano:
             flash('Curso, ano lectivo e ano são obrigatórios.')
             return redirect(url_for('admin.criar_turma'))
+
+        try:
+            ano_int = int(ano)
+        except (TypeError, ValueError):
+            flash('Classe inválida. Use 10, 11 ou 12.')
+            return redirect(url_for('admin.criar_turma'))
+
+        if ano_int < 10 or ano_int > 12:
+            flash('Classe inválida. Use 10, 11 ou 12.')
+            return redirect(url_for('admin.criar_turma'))
+
+        if designacao is None:
+            designacao = ''
         
         existing = db.execute('SELECT id FROM Turmas WHERE curso_id = ? AND ano_lectivo_id = ? AND ano = ? AND designacao = ?', 
-                              (curso_id, ano_lectivo_id, ano, designacao)).fetchone()
+                              (curso_id, ano_lectivo_id, ano_int, designacao)).fetchone()
         if existing:
             flash('Turma já existe.')
             return redirect(url_for('admin.criar_turma'))
         
         db.execute('INSERT INTO Turmas (curso_id, ano_lectivo_id, ano, sala_aula, designacao) VALUES (?, ?, ?, ?, ?)', 
-                   (curso_id, ano_lectivo_id, ano, sala_aula, designacao))
+                   (curso_id, ano_lectivo_id, ano_int, sala_aula, designacao))
 
         turma_id_row = db.execute('SELECT last_insert_rowid()').fetchone()
         turma_id = turma_id_row[0] if turma_id_row is not None else None
@@ -118,7 +131,7 @@ def criar_turma():
         if turma_id is not None:
             disciplinas = db.execute(
                 'SELECT id FROM Disciplinas WHERE curso_id = ? AND ano = ?',
-                (curso_id, ano)
+                (curso_id, ano_int)
             ).fetchall()
             if disciplinas:
                 db.executemany(
