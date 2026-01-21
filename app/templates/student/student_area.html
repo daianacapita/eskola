@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Área do Estudante</h2>
+
+{% if turmas_info %}
+  {% for turma_info in turmas_info %}
+    <div class="bloco-turma">
+      <h3>{{ turma_info.turma.curso_nome }} - Turma {{ turma_info.turma.designacao }} ({{ turma_info.turma.ano_letivo }})</h3>
+      <p><b>Classe:</b> {{ turma_info.turma.classe }} | <b>Sala:</b> {{ turma_info.turma.sala }} | <b>Período:</b> {{ turma_info.turma.periodo|capitalize }}</p>
+      <h4>Disciplinas:</h4>
+      <ul>
+        {% for d in turma_info.disciplinas %}
+          <li>{{ d.nome }} <span style="color:#888">{{ d.descricao }}</span></li>
+        {% endfor %}
+      </ul>
+      <h4>Horário Semanal</h4>
+      <table class="grade-horario">
+        <thead>
+          <tr>
+            <th>Tempo</th>
+            {% for dia in ['Segunda','Terça','Quarta','Quinta','Sexta'] %}
+              <th>{{ dia }}</th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for tempo in turma_info.tempos %}
+            <tr>
+              <td>{{ tempo.label }}</td>
+              {% for dia_idx in range(1,6) %}
+                <td>
+                  {% set disc = turma_info.grade[dia_idx][tempo.tempo] %}
+                  {% if disc %}
+                    <span class="slot-prof">{{ disc }}</span>
+                  {% else %}
+                    <span class="slot-vazio">—</span>
+                  {% endif %}
+                </td>
+              {% endfor %}
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <h4>Minhas Notas</h4>
+      <table class="notas-aluno">
+        <thead>
+          <tr>
+            <th>Disciplina</th>
+            <th>1º Tri</th>
+            <th>2º Tri</th>
+            <th>3º Tri</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% set notas_dict = {} %}
+          {% for n in turma_info.notas %}
+            {% set _ = notas_dict.setdefault(n.disciplina_nome, {}) %}
+            {% set _ = notas_dict[n.disciplina_nome].update({n.trimestre: n.nota}) %}
+          {% endfor %}
+          {% for d in turma_info.disciplinas %}
+            <tr>
+              <td>{{ d.nome }}</td>
+              <td>{% if d.nome in notas_dict and 1 in notas_dict[d.nome] %}{{ notas_dict[d.nome][1] }}{% else %}—{% endif %}</td>
+              <td>{% if d.nome in notas_dict and 2 in notas_dict[d.nome] %}{{ notas_dict[d.nome][2] }}{% else %}—{% endif %}</td>
+              <td>{% if d.nome in notas_dict and 3 in notas_dict[d.nome] %}{{ notas_dict[d.nome][3] }}{% else %}—{% endif %}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <hr>
+    </div>
+  {% endfor %}
+{% else %}
+  <p>Você não possui matrícula ativa.</p>
+{% endif %}
+
+<a href="{{ url_for('auth.logout') }}" class="btn">Sair</a>
+
+<style>
+.grade-horario { border-collapse: collapse; width: 100%; margin-bottom: 1em; }
+.grade-horario th, .grade-horario td { border: 1px solid #ccc; padding: 6px; text-align: center; }
+.slot-prof { background: #d0e7f5; color: #1a3c5c; font-weight: bold; border-radius: 4px; padding: 2px 6px; }
+.slot-vazio { color: #bbb; }
+.notas-aluno { border-collapse: collapse; width: 60%; margin-bottom: 1em; }
+.notas-aluno th, .notas-aluno td { border: 1px solid #ccc; padding: 6px; text-align: center; }
+.btn { display: inline-block; margin: 10px 0; padding: 6px 16px; background: #eee; border-radius: 4px; text-decoration: none; color: #333; border: 1px solid #ccc; }
+.btn:hover { background: #e0e0e0; }
+</style>
+{% endblock %}
