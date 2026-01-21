@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Horário Semanal</h2>
+
+<a href="{{ url_for('professor.index') }}" class="btn">Voltar para Área do Professor</a>
+
+{% if turmas %}
+	{% for turma_id, turma in turmas.items() %}
+		<div class="grade-turma">
+			<h3>{{ turma.info.curso_nome }} - Turma {{ turma.info.designacao }} ({{ turma.info.ano_lectivo }})<br>
+			<small>Período: {{ turma.info.periodo|capitalize }} | Ano: {{ turma.info.turma_ano }}</small></h3>
+			<h4>Disciplinas: {{ turma.info.disciplina_nome }}</h4>
+			<table class="grade-horario">
+				<thead>
+					<tr>
+						<th>Tempo</th>
+						{% for dia in dias_semana %}
+							<th>{{ dia }}</th>
+						{% endfor %}
+					</tr>
+				</thead>
+				<tbody>
+					{% for tempo in turma.tempos %}
+						<tr>
+							<td>{{ tempo.label }}</td>
+							{% for dia_idx in range(1,6) %}
+								{% set td_id = turma.grade[dia_idx][tempo.tempo] %}
+								<td>
+									{% if td_id %}
+										{% if td_id in turma.td_ids_prof %}
+											<span class="slot-prof">Você</span>
+										{% else %}
+											<span class="slot-outro">Outra Disciplina</span>
+										{% endif %}
+									{% else %}
+										<span class="slot-vazio">—</span>
+									{% endif %}
+								</td>
+							{% endfor %}
+						</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+		</div>
+		<br>
+	{% endfor %}
+{% else %}
+	<p>Você não possui docências ativas.</p>
+{% endif %}
+
+<style>
+.grade-horario { border-collapse: collapse; width: 100%; margin-bottom: 1em; }
+.grade-horario th, .grade-horario td { border: 1px solid #ccc; padding: 6px; text-align: center; }
+.slot-prof { background: #d0f5d8; color: #1a5c2e; font-weight: bold; border-radius: 4px; padding: 2px 6px; }
+.slot-outro { background: #f5e6d0; color: #a65c1a; border-radius: 4px; padding: 2px 6px; }
+.slot-vazio { color: #bbb; }
+.btn { display: inline-block; margin: 10px 0; padding: 6px 16px; background: #eee; border-radius: 4px; text-decoration: none; color: #333; border: 1px solid #ccc; }
+.btn:hover { background: #e0e0e0; }
+</style>
+{% endblock %}
