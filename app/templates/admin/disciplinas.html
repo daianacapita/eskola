@@ -14,7 +14,7 @@
       <li>
         {{ disciplina['nome'] }} ({{ disciplina['curso_nome'] }} - Classe {{ disciplina['ano'] }})
         - {{ disciplina['descricao'] }}
-        - Carga: {{ disciplina['carga_semanal'] }} tempos ({{ disciplina['carga_semanal'] * 45 }} min)
+        - Carga: {{ disciplina['carga_semanal'] }} tempos ({{ disciplina['carga_min'] }} min / {{ disciplina['carga_hhmm'] }})
         - <a href="{{ url_for('admin.disciplina_detalhes', id=disciplina['id']) }}">Detalhes</a>
         <form method="post" action="{{ url_for('admin.deletar_disciplina', id=disciplina['id']) }}" style="display:inline;">
           <input type="submit" value="Deletar" onclick="return confirm('Tem certeza?')">

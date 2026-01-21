@@ -287,12 +287,26 @@ def disciplinas():
         return redirect(url_for('index'))
     
     db = get_db()
-    disciplinas = db.execute('''
+    disciplinas_rows = db.execute('''
         SELECT d.*, c.nome as curso_nome 
         FROM Disciplinas d 
         JOIN Cursos c ON d.curso_id = c.id
     ''').fetchall()
-    return render_template('admin/disciplinas.html', disciplinas=disciplinas)
+
+    disciplinas_view = []
+    for row in disciplinas_rows:
+        carga_min = ((row['carga_semanal'] or 1) * 45)
+        hh = carga_min // 60
+        mm = carga_min % 60
+        disciplinas_view.append(
+            {
+                **dict(row),
+                'carga_min': carga_min,
+                'carga_hhmm': f'{hh:02d}:{mm:02d}',
+            }
+        )
+
+    return render_template('admin/disciplinas.html', disciplinas=disciplinas_view)
 
 
 @bp.route('/disciplina/<int:id>')
@@ -337,6 +351,21 @@ def disciplina_detalhes(id):
         (id,)
     ).fetchall()
 
+    periodo_labels = {
+        'matinal': 'Matinal',
+        'vespertino': 'Vespertino',
+        'pos_laboral': 'Pós-laboral',
+    }
+
+    turmas_view = []
+    for t in turmas:
+        turmas_view.append(
+            {
+                **dict(t),
+                'periodo_label': periodo_labels.get(t['periodo'], t['periodo']),
+            }
+        )
+
     carga_min = (disciplina['carga_semanal'] or 1) * 45
     hh = carga_min // 60
     mm = carga_min % 60
@@ -345,7 +374,7 @@ def disciplina_detalhes(id):
     return render_template(
         'admin/disciplina_detalhes.html',
         disciplina=disciplina,
-        turmas=turmas,
+        turmas=turmas_view,
         carga_min=carga_min,
         carga_hhmm=carga_hhmm
     )
