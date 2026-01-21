@@ -20,9 +20,9 @@
       <li class="sidebar-user"><i class="fa fa-user"></i> {{ g.user['username'] }}</li>
       {% if g.user['papel'] == 'admin' %}
         <li class="sidebar-group">
-          <a href="#" class="sidebar-group-toggle" onclick="this.parentElement.classList.toggle('open');return false;">
+          <button type="button" class="sidebar-group-toggle">
             <i class="fa fa-cogs"></i> Gestão <i class="fa fa-chevron-down"></i>
-          </a>
+          </button>
           <ul class="sidebar-submenu">
             <li><a href="{{ url_for('admin.aprovar_alunos') }}"><i class="fa fa-user-check"></i> Aprovar Matrículas</a></li>
             <li><a href="{{ url_for('admin.cursos') }}"><i class="fa fa-book"></i> Cursos</a></li>
@@ -53,7 +53,24 @@
   <header>
     <button class="sidebar-toggle mobile" onclick="toggleSidebar()"><i class="fa fa-bars"></i></button>
     {% block header %}{% endblock %}
+    <button id="darkmode-toggle" title="Alternar tema" onclick="toggleDarkMode()">
+      <i id="darkmode-icon" class="fa fa-moon"></i>
+    </button>
   </header>
+  {% block breadcrumbs %}
+    {% if breadcrumbs %}
+      <nav class="breadcrumbs">
+        {% for crumb in breadcrumbs %}
+          {% if not loop.last %}
+            <a href="{{ crumb.url }}">{{ crumb.name }}</a>
+            <span class="breadcrumb-sep"><i class="fa fa-angle-right"></i></span>
+          {% else %}
+            <span class="breadcrumb-current">{{ crumb.name }}</span>
+          {% endif %}
+        {% endfor %}
+      </nav>
+    {% endif %}
+  {% endblock %}
   <div id="toast-container"></div>
   {% for message in get_flashed_messages() %}
     <div class="flash" style="display:none;">{{ message }}</div>
