@@ -1,3 +1,50 @@
+from flask import Blueprint, render_template, g, send_file, make_response, request, flash, redirect, url_for
+from app.auth import login_required
+import io
+import csv
+from datetime import datetime
+
+bp = Blueprint('student', __name__, url_prefix='/student')
+
+# Exportar boletim PDF/CSV
+# ...existing code...
+
+# Rota de verificação do boletim
+@bp.route('/verificar_boletim/<token>')
+def verificar_boletim(token):
+    # Decodifica token e busca dados do boletim
+    import hashlib
+    segredo = 'eskola2026'  # Ideal: usar variável de ambiente/config
+    # Busca possíveis boletins (matriculas)
+    from app.db import get_db
+    db = get_db()
+    cur = db.execute('''
+        SELECT m.id as matricula_id, m.aluno_id, m.turma_id, t.ano_letivo, t.designacao, t.ano, c.nome as curso_nome, a.nome as aluno_nome
+        FROM matricula m
+        JOIN turma t ON m.turma_id = t.id
+        JOIN curso c ON t.curso_id = c.id
+        JOIN aluno a ON m.aluno_id = a.id
+    ''')
+    boletins = cur.fetchall()
+    encontrado = None
+    for b in boletins:
+        # Recria o token para cada boletim
+        # Para data_emissao, tentamos datas recentes (últimos 30 dias)
+        from datetime import datetime, timedelta
+        for dias in range(0, 31):
+            data_emissao = (datetime.today() - timedelta(days=dias)).strftime('%d/%m/%Y')
+            token_str = f"boletim:{b['matricula_id']}:{b['ano_letivo']}:{data_emissao}:{segredo}"
+            t = hashlib.sha256(token_str.encode('utf-8')).hexdigest()
+            if t == token:
+                encontrado = dict(b)
+                encontrado['data_emissao'] = data_emissao
+                break
+        if encontrado:
+            break
+    if not encontrado:
+        return render_template('verificar_boletim.html', valido=False)
+    # Exibe dados básicos do boletim (sem notas)
+    return render_template('verificar_boletim.html', valido=True, boletim=encontrado)
 
 from flask import Blueprint, render_template, g, send_file, make_response, request, flash
 from app.auth import login_required
@@ -81,7 +128,21 @@ def exportar_boletim(matricula_id):
         response.headers['Content-Disposition'] = f'attachment; filename=boletim_{aluno_nome}_{turma["designacao"]}.csv'
         response.headers['Content-Type'] = 'text/csv'
         return response
-    # PDF via fpdf2
+
+    # --- Geração de token e QR Code ---
+    import hashlib, qrcode, uuid
+    # Token: SHA256 de matricula_id + data_emissao + segredo
+    segredo = 'eskola2026'  # Ideal: usar variável de ambiente/config
+    token_str = f"boletim:{matricula_id}:{turma['ano_letivo']}:{data_emissao}:{segredo}"
+    token = hashlib.sha256(token_str.encode('utf-8')).hexdigest()
+    url_verificacao = f"http://127.0.0.1:5000/verificar_boletim/{token}"
+    # Gerar QR Code em memória
+    qr_img = qrcode.make(url_verificacao)
+    qr_io = io.BytesIO()
+    qr_img.save(qr_io, format='PNG')
+    qr_io.seek(0)
+
+    # --- PDF com assinatura digital e QR ---
     from fpdf import FPDF
     pdf = FPDF()
     pdf.add_page()
@@ -117,8 +178,26 @@ def exportar_boletim(matricula_id):
         pdf.set_text_color(0, 0, 0)
         pdf.ln()
     pdf.ln(2)
+    # --- Área de assinatura digital ---
+    pdf.set_font("Arial", size=10)
+    pdf.cell(0, 10, "", ln=True)
+    y_assinatura = pdf.get_y()
+    # Linha de assinatura
+    pdf.cell(80, 8, "______________________________", ln=0)
+    pdf.cell(10, 8, "", ln=0)
+    # QR Code ao lado
+    x_qr = pdf.get_x()
+    y_qr = y_assinatura
+    pdf.image(qr_io, x=x_qr, y=y_qr, w=30, h=30)
+    pdf.ln(12)
+    pdf.set_font("Arial", size=10)
+    pdf.cell(80, 8, "Assinado digitalmente por: Daiana Capita (Diretora)", ln=1)
+    pdf.cell(80, 8, f"Data: {data_emissao}", ln=1)
     pdf.set_font("Arial", size=8)
-    pdf.cell(0, 6, "Documento gerado automaticamente pelo sistema eskola.", ln=True, align="C")
+    pdf.cell(0, 6, "Documento gerado automaticamente pelo sistema eskola. Esta assinatura é informativa, não equivale a assinatura eletrônica certificada.", ln=True, align="C")
+    pdf.ln(2)
+    pdf.set_font("Arial", size=8)
+    pdf.cell(0, 6, f"Verifique a autenticidade deste boletim em: {url_verificacao}", ln=True, align="C")
     pdf_bytes = pdf.output(dest='S')
     if isinstance(pdf_bytes, str):
         pdf_bytes = pdf_bytes.encode('latin1')

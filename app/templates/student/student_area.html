@@ -6,7 +6,7 @@
   {% for turma_info in turmas_info %}
     <div class="bloco-turma">
       <h3>{{ turma_info.turma.curso_nome }} - Turma {{ turma_info.turma.designacao }} ({{ turma_info.turma.ano_letivo }})</h3>
-      <p><b>Classe:</b> {{ turma_info.turma.classe }} | <b>Sala:</b> {{ turma_info.turma.sala }} | <b>Período:</b> {{ turma_info.turma.periodo|capitalize }}</p>
+      <p><b>Classe:</b> {{ turma_info.turma.ano }} | <b>Turma:</b> {{ turma_info.turma.designacao }} | <b>Período:</b> {{ turma_info.turma.periodo|capitalize }}</p>
       <h4>Disciplinas:</h4>
       <ul>
         {% for d in turma_info.disciplinas %}

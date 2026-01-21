@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4">
+  <h2>Verificação de Autenticidade do Boletim</h2>
+  {% if not valido %}
+    <div class="alert alert-danger mt-3">Boletim não encontrado ou token inválido.</div>
+  {% else %}
+    <div class="alert alert-success mt-3">Boletim válido!</div>
+    <table class="table table-bordered mt-3" style="max-width: 500px;">
+      <tr><th>Aluno</th><td>{{ boletim.aluno_nome }}</td></tr>
+      <tr><th>Turma</th><td>{{ boletim.designacao }}</td></tr>
+      <tr><th>Ano</th><td>{{ boletim.ano }}</td></tr>
+      <tr><th>Ano Letivo</th><td>{{ boletim.ano_letivo }}</td></tr>
+      <tr><th>Curso</th><td>{{ boletim.curso_nome }}</td></tr>
+      <tr><th>Data de Emissão</th><td>{{ boletim.data_emissao }}</td></tr>
+    </table>
+    <div class="alert alert-info">Este boletim foi emitido digitalmente pelo sistema eskola.<br>Para mais informações, entre em contato com a secretaria da escola.</div>
+  {% endif %}
+</div>
+{% endblock %}
