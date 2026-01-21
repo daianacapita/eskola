@@ -282,35 +282,43 @@ def horario():
         turmas[turma_id]['disciplinas'].append(doc['disciplina_nome'])
         turmas[turma_id]['td_ids'].add(doc['turma_disciplina_id'])
 
-    # Para cada turma, buscar slots de horários
-    horarios_por_turma = {}
+    # Consolidar slots de todas as turmas do professor em uma única grade
+    from app.admin import get_tempos
+    # Descobrir todos períodos das turmas do professor
+    periodos = set(turma['info']['periodo'] for turma in turmas.values())
+    # Usar o maior número de tempos entre os períodos
+    tempos_dict = {p: get_tempos(p) for p in periodos}
+    max_periodo = max(tempos_dict, key=lambda p: len(tempos_dict[p]))
+    tempos = tempos_dict[max_periodo]
     dias_semana = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta']
+
+    # Montar grade consolidada: [dia][tempo] = lista de slots (pode ter mais de uma aula do professor no mesmo horário)
+    grade = {dia: {tempo['tempo']: [] for tempo in tempos} for dia in range(1, 6)}
+
+    # Buscar todos slots de todas turmas do professor
     for turma_id, turma in turmas.items():
-        periodo = turma['info']['periodo']
-        from app.admin import get_tempos
-        tempos = get_tempos(periodo)
-        max_tempo = len(tempos)
-        # Buscar todos slots da turma
         slots = db.execute(
             'SELECT dia_semana, tempo, turma_disciplina_id FROM Horarios WHERE turma_id = ?',
             (turma_id,)
         ).fetchall()
-        # Montar grade: [dia][tempo] = turma_disciplina_id
-        grade = {dia: {tempo['tempo']: None for tempo in tempos} for dia in range(1, 6)}
         for slot in slots:
             dia = slot['dia_semana']
             tempo = slot['tempo']
             td_id = slot['turma_disciplina_id']
-            grade[dia][tempo] = td_id
-        horarios_por_turma[turma_id] = {
-            'grade': grade,
-            'tempos': tempos,
-            'info': turma['info'],
-            'td_ids_prof': turma['td_ids'],
-        }
+            # Só mostrar slots do professor
+            if td_id in turma['td_ids']:
+                grade[dia][tempo].append({
+                    'turma': turma['info']['designacao'],
+                    'disciplina': turma['info']['disciplina_nome'],
+                    'turma_id': turma_id,
+                    'td_id': td_id,
+                    'ano_letivo': turma['info']['ano_lectivo'],
+                    'curso': turma['info']['curso_nome'],
+                })
 
     return render_template(
         'professor/horario.html',
-        turmas=horarios_por_turma,
+        grade=grade,
+        tempos=tempos,
         dias_semana=dias_semana,
     )
