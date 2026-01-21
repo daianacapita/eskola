@@ -42,6 +42,10 @@
         </tbody>
       </table>
       <h4>Minhas Notas</h4>
+      <div style="margin-bottom:10px">
+        <a href="{{ url_for('student.exportar_boletim', matricula_id=turma_info.turma.id) }}" class="btn" target="_blank">Exportar Boletim (PDF)</a>
+        <a href="{{ url_for('student.exportar_boletim', matricula_id=turma_info.turma.id, formato='csv') }}" class="btn" target="_blank">Exportar CSV</a>
+      </div>
       <table class="notas-aluno">
         <thead>
           <tr>
@@ -49,6 +53,7 @@
             <th>1º Tri</th>
             <th>2º Tri</th>
             <th>3º Tri</th>
+            <th>Média</th>
           </tr>
         </thead>
         <tbody>
@@ -63,6 +68,14 @@
               <td>{% if d.nome in notas_dict and 1 in notas_dict[d.nome] %}{{ notas_dict[d.nome][1] }}{% else %}—{% endif %}</td>
               <td>{% if d.nome in notas_dict and 2 in notas_dict[d.nome] %}{{ notas_dict[d.nome][2] }}{% else %}—{% endif %}</td>
               <td>{% if d.nome in notas_dict and 3 in notas_dict[d.nome] %}{{ notas_dict[d.nome][3] }}{% else %}—{% endif %}</td>
+              <td>
+                {% set media = turma_info.medias[d.nome] %}
+                {% if media is not none %}
+                  <span {% if media < 10 %}style="color:red;font-weight:bold"{% endif %}>{{ media }}</span>
+                {% else %}
+                  —
+                {% endif %}
+              </td>
             </tr>
           {% endfor %}
         </tbody>
