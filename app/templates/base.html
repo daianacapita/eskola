@@ -1,41 +1,64 @@
+<!-- removido DOCTYPE/HTML antigo duplicado para evitar bloco 'title' duplicado -->
 <!doctype html>
-<title>{% block title %}{% endblock %} - Flaskr</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-<nav>
-  <h1>eskola</h1>
-  <ul>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <title>{% block title %}{% endblock %} - eskola</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script defer src="{{ url_for('static', filename='sidebar.js') }}"></script>
+</head>
+<body>
+<div class="sidebar{% if g.user and g.user['papel']=='admin' %} admin-sidebar{% endif %}">
+  <div class="sidebar-header">
+    <span class="sidebar-title"><i class="fa-solid fa-graduation-cap"></i> eskola</span>
+    <button class="sidebar-toggle" onclick="toggleSidebar()"><i class="fa fa-bars"></i></button>
+  </div>
+  <ul class="sidebar-menu">
     {% if g.user %}
-      <li><span>{{ g.user['username'] }}</span>
+      <li class="sidebar-user"><i class="fa fa-user"></i> {{ g.user['username'] }}</li>
       {% if g.user['papel'] == 'admin' %}
-        <li><a href="{{ url_for('admin.aprovar_alunos') }}">Aprovar Matriculas</a>
-        <li><a href="{{ url_for('admin.cursos') }}">Cursos</a>
-        <li><a href="{{ url_for('admin.disciplinas') }}">Disciplinas</a>
-        <li><a href="{{ url_for('admin.turmas') }}">Turmas</a>
-        <li><a href="{{ url_for('admin.matricular') }}">Matrículas</a>       
-        <li><a href="{{ url_for('auth.register') }}">Register</a>
+        <li class="sidebar-group">
+          <a href="#" class="sidebar-group-toggle" onclick="this.parentElement.classList.toggle('open');return false;">
+            <i class="fa fa-cogs"></i> Gestão <i class="fa fa-chevron-down"></i>
+          </a>
+          <ul class="sidebar-submenu">
+            <li><a href="{{ url_for('admin.aprovar_alunos') }}"><i class="fa fa-user-check"></i> Aprovar Matrículas</a></li>
+            <li><a href="{{ url_for('admin.cursos') }}"><i class="fa fa-book"></i> Cursos</a></li>
+            <li><a href="{{ url_for('admin.disciplinas') }}"><i class="fa fa-book-open"></i> Disciplinas</a></li>
+            <li><a href="{{ url_for('admin.turmas') }}"><i class="fa fa-users"></i> Turmas</a></li>
+            <li><a href="{{ url_for('admin.matricular') }}"><i class="fa fa-user-plus"></i> Matrícula</a></li>
+            <li><a href="{{ url_for('auth.register') }}"><i class="fa fa-user-plus"></i> Registrar Usuário</a></li>
+          </ul>
+        </li>
+        <li><a href="{{ url_for('anuncios') }}"><i class="fa fa-bullhorn"></i> Anúncios</a></li>
       {% endif %}
       {% if g.user['papel'] == 'professor' %}
-        <li><a href="{{ url_for('professor.index') }}">Área do Professor</a>
-        <li><a href="{{ url_for('professor.horario') }}">Ver Horário</a>
+        <li><a href="{{ url_for('professor.index') }}"><i class="fa fa-chalkboard-teacher"></i> Área do Professor</a></li>
+        <li><a href="{{ url_for('professor.horario') }}"><i class="fa fa-calendar"></i> Ver Horário</a></li>
       {% endif %}
       {% if g.user['papel'] == 'aluno' %}
-        <li><a href="{{ url_for('student.student_area') }}">Área do Estudante</a>
+        <li><a href="{{ url_for('student.student_area') }}"><i class="fa fa-user-graduate"></i> Área do Estudante</a></li>
       {% endif %}
-      <li><a href="{{ url_for('anuncios') }}">Anúncios</a>
-      <li><a href="{{ url_for('auth.logout') }}">Log Out</a>
+      <li><a href="{{ url_for('auth.logout') }}"><i class="fa fa-sign-out-alt"></i> Sair</a></li>
     {% else %}
-      <li><a href="{{ url_for('anuncios') }}">Anúncios</a>
-      <li><a href="{{ url_for('auth.pre_register') }}">Pré-Inscrição</a>
-      <li><a href="{{ url_for('auth.login') }}">Log In</a>
+      <li><a href="{{ url_for('anuncios') }}"><i class="fa fa-bullhorn"></i> Anúncios</a></li>
+      <li><a href="{{ url_for('auth.pre_register') }}"><i class="fa fa-user-plus"></i> Pré-Inscrição</a></li>
+      <li><a href="{{ url_for('auth.login') }}"><i class="fa fa-sign-in-alt"></i> Entrar</a></li>
     {% endif %}
   </ul>
-</nav>
-<section class="content">
+</div>
+<div class="main-content">
   <header>
+    <button class="sidebar-toggle mobile" onclick="toggleSidebar()"><i class="fa fa-bars"></i></button>
     {% block header %}{% endblock %}
   </header>
+  <div id="toast-container"></div>
   {% for message in get_flashed_messages() %}
-    <div class="flash">{{ message }}</div>
+    <div class="flash" style="display:none;">{{ message }}</div>
   {% endfor %}
   {% block content %}{% endblock %}
-</section>
+</div>
+</body>
+</html>
