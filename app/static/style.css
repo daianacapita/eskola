@@ -1,3 +1,71 @@
+/* Pré-inscrição: grupos de campos */
+.form-preinscricao {
+	max-width: 600px;
+	margin: 0 auto;
+	background: #fff;
+	border-radius: 8px;
+	padding: 1.5em 1.5em 1em 1.5em;
+	box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+}
+.form-info-topo {
+	background: #e9f3fa;
+	color: #1a3c5c;
+	border-left: 4px solid #377ba8;
+	padding: 0.7em 1em;
+	margin-bottom: 1.2em;
+	border-radius: 4px;
+	font-size: 1.05em;
+}
+.grupo-form {
+	border: 1px solid #c7d0db;
+	border-radius: 6px;
+	margin-bottom: 1.2em;
+	padding: 1em 1em 0.5em 1em;
+	background: #f8fafc;
+}
+.grupo-form legend {
+	font-weight: bold;
+	color: #377ba8;
+	font-size: 1.08em;
+	padding: 0 0.5em;
+}
+.grupo-form label {
+	display: block;
+	margin-top: 0.7em;
+	margin-bottom: 0.2em;
+	font-weight: 500;
+}
+.grupo-form input, .grupo-form select {
+	width: 100%;
+	padding: 0.5em;
+	border: 1px solid #bbb;
+	border-radius: 4px;
+	font-size: 1em;
+	margin-bottom: 0.3em;
+	background: #fff;
+}
+.form-preinscricao input[type=submit] {
+	margin-top: 1em;
+	background: #377ba8;
+	color: #fff;
+	border: none;
+	border-radius: 4px;
+	padding: 0.7em 2em;
+	font-size: 1.1em;
+	cursor: pointer;
+	transition: background 0.2s;
+}
+.form-preinscricao input[type=submit]:hover {
+	background: #285a8c;
+}
+@media (max-width: 600px) {
+	.form-preinscricao {
+		padding: 0.7em 0.3em 0.7em 0.3em;
+	}
+	.grupo-form {
+		padding: 0.7em 0.5em 0.5em 0.5em;
+	}
+}
 /* Breadcrumbs */
 .breadcrumbs {
 	display: flex;
