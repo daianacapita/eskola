@@ -9,17 +9,34 @@
 
 {% block content %}
   <a href="{{ url_for('admin.criar_disciplina') }}">Criar Nova Disciplina</a>
-  <ul>
-    {% for disciplina in disciplinas %}
-      <li>
-        {{ disciplina['nome'] }} ({{ disciplina['curso_nome'] }} - Classe {{ disciplina['ano'] }})
-        - {{ disciplina['descricao'] }}
-        - Carga: {{ disciplina['carga_semanal'] }} tempos ({{ disciplina['carga_min'] }} min / {{ disciplina['carga_hhmm'] }})
-        - <a href="{{ url_for('admin.disciplina_detalhes', id=disciplina['id']) }}">Detalhes</a>
-        <form method="post" action="{{ url_for('admin.deletar_disciplina', id=disciplina['id']) }}" style="display:inline;">
-          <input type="submit" value="Deletar" onclick="return confirm('Tem certeza?')">
-        </form>
-      </li>
-    {% endfor %}
-  </ul>
+  <input id="disciplinas-filter" class="table-filter" type="text" placeholder="Filtrar disciplinas..." onkeyup="filterTable('disciplinas-filter','disciplinas-tabela')">
+  <table id="disciplinas-tabela" style="width:100%;margin-top:10px">
+    <thead>
+      <tr>
+        <th>Nome</th>
+        <th>Curso</th>
+        <th>Classe</th>
+        <th>Descrição</th>
+        <th>Carga</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for disciplina in disciplinas %}
+      <tr>
+        <td>{{ disciplina['nome'] }}</td>
+        <td>{{ disciplina['curso_nome'] }}</td>
+        <td>{{ disciplina['ano'] }}</td>
+        <td>{{ disciplina['descricao'] }}</td>
+        <td>{{ disciplina['carga_semanal'] }} tempos ({{ disciplina['carga_min'] }} min / {{ disciplina['carga_hhmm'] }})</td>
+        <td>
+          <a href="{{ url_for('admin.disciplina_detalhes', id=disciplina['id']) }}">Detalhes</a>
+          <form method="post" action="{{ url_for('admin.deletar_disciplina', id=disciplina['id']) }}" style="display:inline;">
+            <input type="submit" value="Deletar" onclick="return confirm('Tem certeza?')">
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
 {% endblock %}

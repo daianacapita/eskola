@@ -9,15 +9,27 @@
 
 {% block content %}
   <a href="{{ url_for('admin.criar_curso') }}">Criar Novo Curso</a>
-  <ul>
-    {% for curso in cursos %}
-      <li>
-        <a href="{{ url_for('admin.curso_detalhes', id=curso['id']) }}">{{ curso['nome'] }}</a>
-        - {{ curso['descricao'] }}
-        <form method="post" action="{{ url_for('admin.deletar_curso', id=curso['id']) }}" style="display:inline;">
-          <input type="submit" value="Deletar" onclick="return confirm('Tem certeza?')">
-        </form>
-      </li>
-    {% endfor %}
-  </ul>
+  <input id="cursos-filter" class="table-filter" type="text" placeholder="Filtrar cursos..." onkeyup="filterTable('cursos-filter','cursos-tabela')">
+  <table id="cursos-tabela" style="width:100%;margin-top:10px">
+    <thead>
+      <tr>
+        <th>Nome</th>
+        <th>Descrição</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for curso in cursos %}
+      <tr>
+        <td><a href="{{ url_for('admin.curso_detalhes', id=curso['id']) }}">{{ curso['nome'] }}</a></td>
+        <td>{{ curso['descricao'] }}</td>
+        <td>
+          <form method="post" action="{{ url_for('admin.deletar_curso', id=curso['id']) }}" style="display:inline;">
+            <input type="submit" value="Deletar" onclick="return confirm('Tem certeza?')">
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
 {% endblock %}
