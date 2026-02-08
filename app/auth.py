@@ -363,12 +363,8 @@ def login_required(view):
 @login_required
 def download_documento(preinscricao_id, doc_type):
     """
-    Download seguro de documento. Apenas admin pode acessar.
+    Download seguro de documento. Admin ou aluno dono do documento pode acessar.
     """
-    if g.user['papel'] != 'admin':
-        flash('Acesso negado.')
-        return redirect(url_for('index'))
-    
     # Validar doc_type
     if doc_type not in ['documento_anterior', 'bilhete']:
         flash('Tipo de documento inválido.')
@@ -381,6 +377,23 @@ def download_documento(preinscricao_id, doc_type):
     
     if not preinscricao:
         flash('Pré-inscrição não encontrada.')
+        return redirect(url_for('index'))
+    
+    # Permissão: admin ou aluno dono
+    if g.user['papel'] == 'admin':
+        pass
+    elif g.user['papel'] == 'aluno':
+        aluno = db.execute(
+            'SELECT * FROM Alunos WHERE id = ?', (g.user['aluno_id'],)
+        ).fetchone()
+        if not aluno:
+            flash('Acesso negado.')
+            return redirect(url_for('index'))
+        if preinscricao['email'] != aluno['email'] and preinscricao['numero_bilhete'] != aluno['numero_bilhete']:
+            flash('Acesso negado.')
+            return redirect(url_for('index'))
+    else:
+        flash('Acesso negado.')
         return redirect(url_for('index'))
     
     # Obter o caminho do documento
@@ -405,6 +418,6 @@ def download_documento(preinscricao_id, doc_type):
     
     try:
         return send_file(full_path, as_attachment=True, download_name=os.path.basename(full_path))
-    except Exception as e:
+    except Exception:
         flash('Erro ao baixar documento.')
         return redirect(url_for('index'))

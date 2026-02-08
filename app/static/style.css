@@ -66,6 +66,133 @@
 		padding: 0.7em 0.5em 0.5em 0.5em;
 	}
 }
+
+/* Perfil */
+.perfil-container {
+	max-width: 980px;
+	margin: 0 auto;
+	padding: 1.2em;
+}
+.perfil-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 1em;
+	margin-bottom: 1.2em;
+}
+.perfil-nome {
+	margin: 0;
+	font-size: 1.6em;
+}
+.perfil-sub {
+	margin: 0.2em 0 0 0;
+	color: #666;
+}
+.perfil-status {
+	padding: 0.4em 0.8em;
+	border-radius: 999px;
+	font-weight: 600;
+	font-size: 0.95em;
+}
+.status-pendente {
+	background: #f7edd0;
+	color: #7a5a00;
+}
+.status-aprovado {
+	background: #dff2e2;
+	color: #1f6f2a;
+}
+.status-rejeitado {
+	background: #f7d7d7;
+	color: #8a1c1c;
+}
+.perfil-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+	gap: 1em;
+}
+.perfil-card {
+	background: #fff;
+	border: 1px solid #e0e0e0;
+	border-radius: 8px;
+	padding: 1em;
+	box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+.perfil-card h3 {
+	margin-top: 0;
+	color: #377ba8;
+}
+.perfil-list div {
+	display: flex;
+	justify-content: space-between;
+	gap: 0.8em;
+	border-bottom: 1px dashed #eee;
+	padding: 0.35em 0;
+}
+.perfil-list div span {
+	color: #555;
+}
+.perfil-docs {
+	display: flex;
+	flex-direction: column;
+	gap: 0.6em;
+}
+.perfil-doc {
+	color: #377ba8;
+	text-decoration: none;
+	font-weight: 600;
+}
+.perfil-doc:hover {
+	text-decoration: underline;
+}
+.perfil-vazio {
+	color: #999;
+	font-style: italic;
+}
+.perfil-status-msg {
+	margin: 0;
+	font-weight: 600;
+}
+.perfil-nota {
+	margin: 0.3em 0 0 0;
+	color: #666;
+}
+.perfil-admin {
+	margin-top: 1.5em;
+	background: #fff;
+	border: 1px solid #e0e0e0;
+	border-radius: 8px;
+	padding: 1em;
+}
+.perfil-admin-form {
+	margin-top: 0.8em;
+	display: flex;
+	flex-direction: column;
+	gap: 0.6em;
+}
+.perfil-acoes {
+	margin-top: 1.2em;
+}
+.btn {
+	display: inline-block;
+	padding: 0.6em 1.1em;
+	border-radius: 6px;
+	border: none;
+	cursor: pointer;
+	font-weight: 600;
+}
+.btn-primary {
+	background: #377ba8;
+	color: #fff;
+}
+.btn-secondary {
+	background: #e4e7eb;
+	color: #23272e;
+}
+.btn-danger {
+	background: #c0392b;
+	color: #fff;
+}
 /* Breadcrumbs */
 .breadcrumbs {
 	display: flex;

@@ -55,6 +55,9 @@ def create_app(test_config=None):
     from . import professor
     app.register_blueprint(professor.bp)
 
+    from . import perfil
+    app.register_blueprint(perfil.bp)
+
     @app.route('/anuncios')
     def anuncios():
         db = get_db()

@@ -1220,6 +1220,34 @@ def aprovar_aluno(preinscricao_id):
     
     return redirect(url_for('admin.aprovar_alunos'))
 
+@bp.route('/rejeitar_preinscricao/<int:preinscricao_id>', methods=['POST'])
+@login_required
+def rejeitar_preinscricao(preinscricao_id):
+    if g.user['papel'] != 'admin':
+        flash('Acesso negado.')
+        return redirect(url_for('admin.aprovar_alunos'))
+
+    db = get_db()
+    preinscricao = db.execute(
+        'SELECT * FROM PreInscricoes WHERE id = ?', (preinscricao_id,)
+    ).fetchone()
+
+    if not preinscricao:
+        flash('Pré-inscrição não encontrada.')
+        return redirect(url_for('admin.aprovar_alunos'))
+
+    if preinscricao['status'] != 'pendente':
+        flash('Esta pré-inscrição não está pendente.')
+        return redirect(url_for('admin.aprovar_alunos'))
+
+    db.execute(
+        'UPDATE PreInscricoes SET status = ?, data_aprovacao = CURRENT_TIMESTAMP, admin_id = ? WHERE id = ?',
+        ('rejeitado', g.user['id'], preinscricao_id)
+    )
+    db.commit()
+    flash(f'Pré-inscrição de {preinscricao["nome"]} rejeitada.')
+    return redirect(url_for('admin.aprovar_alunos'))
+
 @bp.route('/anuncios')
 @login_required
 def anuncios():

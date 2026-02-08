@@ -11,7 +11,11 @@
   {% for preinscricao in preinscricoes %}
     <div style="border: 1px solid #ddd; padding: 15px; margin-bottom: 20px; border-radius: 5px;">
       <h3>{{ preinscricao['nome'] }} ({{ preinscricao['email'] }})</h3>
-      <p><strong>BI:</strong> {{ preinscricao['numero_bilhete'] }} | <strong>Data de Inscrição:</strong> {{ preinscricao['data_preinscricao'] }}</p>
+      <p>
+        <strong>BI:</strong> {{ preinscricao['numero_bilhete'] }}
+        | <strong>Data de Inscrição:</strong> {{ preinscricao['data_preinscricao'] }}
+        | <a href="{{ url_for('perfil.perfil', aluno_id=preinscricao['preinscricao_id']) }}">Ver perfil</a>
+      </p>
       
       {% if preinscricao['documento_anterior_path'] or preinscricao['bilhete_path'] %}
       <div style="background-color: #f5f5f5; padding: 10px; margin-bottom: 10px; border-radius: 3px;">
