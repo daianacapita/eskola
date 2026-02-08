@@ -3,6 +3,14 @@ function toggleSidebar() {
   document.body.classList.toggle('sidebar-collapsed');
 }
 
+// Mobile navigation toggle (para o novo menu horizontal)
+function toggleMobileNav() {
+  const nav = document.querySelector('.liceu-nav-menu');
+  if (nav) {
+    nav.style.display = nav.style.display === 'flex' ? 'none' : 'flex';
+  }
+}
+
 // Accordion exclusivo na sidebar
 window.addEventListener('DOMContentLoaded', function() {
   document.querySelectorAll('.sidebar-group-toggle').forEach(function(toggle) {
@@ -13,6 +21,16 @@ window.addEventListener('DOMContentLoaded', function() {
       });
       parent.classList.toggle('open');
       e.preventDefault();
+    });
+  });
+  
+  // Mobile menu close quando clicar em um link
+  document.querySelectorAll('.liceu-nav-menu a').forEach(link => {
+    link.addEventListener('click', function() {
+      if (window.innerWidth <= 768) {
+        const nav = document.querySelector('.liceu-nav-menu');
+        if (nav) nav.style.display = 'none';
+      }
     });
   });
 });

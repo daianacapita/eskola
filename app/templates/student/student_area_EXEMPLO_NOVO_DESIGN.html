@@ -1,0 +1,166 @@
+{% extends 'base.html' %}
+{% from "_widgets.html" import widget_card, widget_horario, widget_turmas, widget_stats %}
+
+{% block title %}Área do Estudante{% endblock %}
+
+{% block content %}
+<div class="liceu-page-header">
+  <h1>Área do Estudante</h1>
+</div>
+
+<div class="liceu-content">
+  
+  {% if turmas_info %}
+    
+    {# Estatísticas Gerais #}
+    {% set stats = [
+      {'icon': 'fa-graduation-cap', 'label': 'Turmas Ativas', 'value': turmas_info|length},
+      {'icon': 'fa-book', 'label': 'Disciplinas', 'value': turmas_info[0].disciplinas|length},
+      {'icon': 'fa-chart-line', 'label': 'Média Geral', 'value': '0.0'}
+    ] %}
+    {{ widget_stats(stats) }}
+    
+    {# Para cada turma do aluno #}
+    {% for turma_info in turmas_info %}
+      
+      {# Informações da Turma #}
+      {% call widget_card('fa-users', turma_info.turma.curso_nome + ' - Turma ' + turma_info.turma.designacao) %}
+        <div style="display: flex; gap: 1rem; margin-bottom: var(--spacing-md);">
+          <span><strong>Classe:</strong> {{ turma_info.turma.ano }}</span>
+          <span><strong>Turma:</strong> {{ turma_info.turma.designacao }}</span>
+          <span><strong>Período:</strong> {{ turma_info.turma.periodo|capitalize }}</span>
+          <span><strong>Ano Letivo:</strong> {{ turma_info.turma.ano_letivo }}</span>
+        </div>
+        
+        <h4 style="margin-top: var(--spacing-lg); margin-bottom: var(--spacing-md); color: var(--liceu-primary);">
+          <i class="fa fa-book"></i> Disciplinas
+        </h4>
+        <ul style="list-style: none; padding: 0;">
+          {% for d in turma_info.disciplinas %}
+            <li style="padding: var(--spacing-sm); border-bottom: 1px solid var(--liceu-gray-100);">
+              <i class="fa fa-bookmark" style="color: var(--liceu-primary); margin-right: var(--spacing-sm);"></i>
+              <strong>{{ d.nome }}</strong>
+              <span style="color: var(--liceu-gray-300); font-size: 0.9rem;"> — {{ d.descricao }}</span>
+            </li>
+          {% endfor %}
+        </ul>
+      {% endcall %}
+      
+      {# Horário Semanal #}
+      {% call widget_card('fa-calendar-alt', 'Horário Semanal') %}
+        <table class="grade-horario" style="width: 100%; border-collapse: collapse;">
+          <thead>
+            <tr style="background: var(--liceu-primary); color: white;">
+              <th style="padding: var(--spacing-md); text-align: left;">Tempo</th>
+              {% for dia in ['Segunda','Terça','Quarta','Quinta','Sexta'] %}
+                <th style="padding: var(--spacing-md); text-align: center;">{{ dia }}</th>
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for tempo in turma_info.tempos %}
+              <tr style="border-bottom: 1px solid var(--liceu-gray-200);">
+                <td style="padding: var(--spacing-md); font-weight: 600;">{{ tempo.label }}</td>
+                {% for dia_idx in range(1,6) %}
+                  <td style="padding: var(--spacing-md); text-align: center;">
+                    {% set disc = turma_info.grade[dia_idx][tempo.tempo] %}
+                    {% if disc %}
+                      <span style="background: var(--liceu-gray-50); padding: var(--spacing-xs) var(--spacing-sm); border-radius: var(--border-radius); font-weight: 500;">
+                        {{ disc }}
+                      </span>
+                    {% else %}
+                      <span style="color: var(--liceu-gray-300);">—</span>
+                    {% endif %}
+                  </td>
+                {% endfor %}
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% endcall %}
+      
+      {# Minhas Notas #}
+      {% call widget_card('fa-clipboard-list', 'Minhas Notas e Boletim') %}
+        
+        {# Botões de Exportação #}
+        <div style="display: flex; gap: var(--spacing-sm); margin-bottom: var(--spacing-lg); flex-wrap: wrap;">
+          <a href="{{ url_for('student.exportar_boletim', matricula_id=turma_info.turma.id) }}" 
+             class="btn btn-primary" target="_blank">
+            <i class="fa fa-file-pdf"></i> Exportar Boletim PDF
+          </a>
+          <a href="{{ url_for('student.exportar_boletim', matricula_id=turma_info.turma.id, formato='csv') }}" 
+             class="btn btn-secondary" target="_blank">
+            <i class="fa fa-file-csv"></i> Exportar CSV
+          </a>
+        </div>
+        
+        {# Tabela de Notas #}
+        <table class="notas-aluno" style="width: 100%; border-collapse: collapse;">
+          <thead>
+            <tr style="background: var(--liceu-primary); color: white;">
+              <th style="padding: var(--spacing-md); text-align: left;">Disciplina</th>
+              <th style="padding: var(--spacing-md); text-align: center;">1º Trim</th>
+              <th style="padding: var(--spacing-md); text-align: center;">2º Trim</th>
+              <th style="padding: var(--spacing-md); text-align: center;">3º Trim</th>
+              <th style="padding: var(--spacing-md); text-align: center;">Mac</th>
+              <th style="padding: var(--spacing-md); text-align: center;">Exame</th>
+              <th style="padding: var(--spacing-md); text-align: center;">Mfd</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for nota in turma_info.notas %}
+              <tr style="border-bottom: 1px solid var(--liceu-gray-200);">
+                <td style="padding: var(--spacing-md); font-weight: 500;">
+                  {{ nota.disciplina_nome }}
+                </td>
+                <td style="padding: var(--spacing-md); text-align: center;">
+                  {{ nota.primeiro_trimestre or '—' }}
+                </td>
+                <td style="padding: var(--spacing-md); text-align: center;">
+                  {{ nota.segundo_trimestre or '—' }}
+                </td>
+                <td style="padding: var(--spacing-md); text-align: center;">
+                  {{ nota.terceiro_trimestre or '—' }}
+                </td>
+                <td style="padding: var(--spacing-md); text-align: center; font-weight: 600;">
+                  {{ nota.mac or '—' }}
+                </td>
+                <td style="padding: var(--spacing-md); text-align: center;">
+                  {{ nota.exame or '—' }}
+                </td>
+                <td style="padding: var(--spacing-md); text-align: center; font-weight: 700; color: {% if nota.mfd >= 10 %}var(--liceu-success){% else %}var(--liceu-danger){% endif %};">
+                  {{ nota.mfd or '—' }}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        
+        {# Legenda #}
+        <div style="margin-top: var(--spacing-lg); padding: var(--spacing-md); background: var(--liceu-gray-50); border-radius: var(--border-radius);">
+          <small style="color: var(--liceu-gray-700);">
+            <strong>Legenda:</strong> Mac = Média Anual de Classe | Mfd = Média Final da Disciplina
+          </small>
+        </div>
+        
+      {% endcall %}
+      
+    {% endfor %}
+    
+  {% else %}
+    
+    {# Sem turmas #}
+    {% call widget_card('fa-info-circle', 'Informação') %}
+      <p style="text-align: center; padding: var(--spacing-xl); color: var(--liceu-gray-300);">
+        <i class="fa fa-graduation-cap" style="font-size: 3rem; display: block; margin-bottom: var(--spacing-md);"></i>
+        Você ainda não está matriculado em nenhuma turma.
+      </p>
+      <a href="{{ url_for('index') }}" class="widget-link" style="justify-content: center;">
+        <i class="fa fa-home"></i> Voltar ao Início
+      </a>
+    {% endcall %}
+    
+  {% endif %}
+  
+</div>
+{% endblock %}

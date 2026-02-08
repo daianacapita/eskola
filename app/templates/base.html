@@ -1,82 +1,183 @@
-<!-- removido DOCTYPE/HTML antigo duplicado para evitar bloco 'title' duplicado -->
 <!doctype html>
 <html lang="pt-br">
 <head>
   <meta charset="utf-8">
-  <title>{% block title %}{% endblock %} - eskola</title>
+  <title>{% block title %}{% endblock %} - Liceu de Cabinda</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script defer src="{{ url_for('static', filename='sidebar.js') }}"></script>
 </head>
-<body>
-<div class="sidebar{% if g.user and g.user['papel']=='admin' %} admin-sidebar{% endif %}">
-  <div class="sidebar-header">
-    <span class="sidebar-title"><i class="fa-solid fa-graduation-cap"></i> eskola</span>
-    <button class="sidebar-toggle" onclick="toggleSidebar()"><i class="fa fa-bars"></i></button>
-  </div>
-  <ul class="sidebar-menu">
-    {% if g.user %}
-      <li class="sidebar-user"><i class="fa fa-user"></i> {{ g.user['username'] }}</li>
-      {% if g.user['papel'] == 'admin' %}
-        <li class="sidebar-group">
-          <button type="button" class="sidebar-group-toggle">
-            <i class="fa fa-cogs"></i> Gestão <i class="fa fa-chevron-down"></i>
-          </button>
-          <ul class="sidebar-submenu">
-            <li><a href="{{ url_for('admin.aprovar_alunos') }}"><i class="fa fa-user-check"></i> Aprovar Matrículas</a></li>
-            <li><a href="{{ url_for('admin.cursos') }}"><i class="fa fa-book"></i> Cursos</a></li>
-            <li><a href="{{ url_for('admin.disciplinas') }}"><i class="fa fa-book-open"></i> Disciplinas</a></li>
-            <li><a href="{{ url_for('admin.turmas') }}"><i class="fa fa-users"></i> Turmas</a></li>
-            <li><a href="{{ url_for('admin.matricular') }}"><i class="fa fa-user-plus"></i> Matrícula</a></li>
-            <li><a href="{{ url_for('auth.register') }}"><i class="fa fa-user-plus"></i> Registrar Usuário</a></li>
-          </ul>
-        </li>
-        <li><a href="{{ url_for('anuncios') }}"><i class="fa fa-bullhorn"></i> Anúncios</a></li>
-      {% endif %}
-      {% if g.user['papel'] == 'professor' %}
-        <li><a href="{{ url_for('professor.index') }}"><i class="fa fa-chalkboard-teacher"></i> Área do Professor</a></li>
-        <li><a href="{{ url_for('professor.horario') }}"><i class="fa fa-calendar"></i> Ver Horário</a></li>
-      {% endif %}
-      {% if g.user['papel'] == 'aluno' %}
-        <li><a href="{{ url_for('student.student_area') }}"><i class="fa fa-user-graduate"></i> Área do Estudante</a></li>
-        <li><a href="{{ url_for('perfil.perfil') }}"><i class="fa fa-id-card"></i> Meu Perfil</a></li>
-      {% endif %}
-      <li><a href="{{ url_for('auth.logout') }}"><i class="fa fa-sign-out-alt"></i> Sair</a></li>
-    {% else %}
-      <li><a href="{{ url_for('anuncios') }}"><i class="fa fa-bullhorn"></i> Anúncios</a></li>
-      <li><a href="{{ url_for('auth.pre_register') }}"><i class="fa fa-user-plus"></i> Pré-Inscrição</a></li>
-      <li><a href="{{ url_for('auth.login') }}"><i class="fa fa-sign-in-alt"></i> Entrar</a></li>
-    {% endif %}
-  </ul>
-</div>
-<div class="main-content">
-  <header>
-    <button class="sidebar-toggle mobile" onclick="toggleSidebar()"><i class="fa fa-bars"></i></button>
-    {% block header %}{% endblock %}
-    <button id="darkmode-toggle" title="Alternar tema" onclick="toggleDarkMode()">
-      <i id="darkmode-icon" class="fa fa-moon"></i>
-    </button>
-  </header>
-  {% block breadcrumbs %}
-    {% if breadcrumbs %}
-      <nav class="breadcrumbs">
-        {% for crumb in breadcrumbs %}
-          {% if not loop.last %}
-            <a href="{{ crumb.url }}">{{ crumb.name }}</a>
-            <span class="breadcrumb-sep"><i class="fa fa-angle-right"></i></span>
-          {% else %}
-            <span class="breadcrumb-current">{{ crumb.name }}</span>
+<body class="liceu-layout">
+  
+  <!-- Header Institucional -->
+  <header class="liceu-header">
+    <div class="liceu-header-top">
+      <div class="liceu-brand">
+        <img src="{{ url_for('static', filename='logo_liceu.svg') }}" alt="Logo Liceu de Cabinda" class="liceu-logo">
+        <div class="liceu-brand-text">
+          <h1>LICEU DE CABINDA</h1>
+          <p>Sistema de Gestão Escolar</p>
+        </div>
+      </div>
+      <div class="liceu-header-actions">
+        {% if g.user %}
+          <div class="liceu-user-info">
+            <i class="fa fa-user-circle"></i>
+            <span>{{ g.user['username'] }}</span>
+            <span class="liceu-user-role">{{ g.user['papel'] }}</span>
+          </div>
+          <a href="{{ url_for('auth.logout') }}" class="liceu-btn-logout" title="Sair">
+            <i class="fa fa-sign-out-alt"></i>
+          </a>
+        {% else %}
+          <a href="{{ url_for('auth.login') }}" class="liceu-btn-login">
+            <i class="fa fa-sign-in-alt"></i> Entrar
+          </a>
+        {% endif %}
+      </div>
+    </div>
+    
+    <!-- Menu Horizontal Principal -->
+    <nav class="liceu-nav">
+      <ul class="liceu-nav-menu">
+        <li><a href="{{ url_for('index') }}" class="{% if request.endpoint == 'index' %}active{% endif %}">
+          <i class="fa fa-home"></i> Início
+        </a></li>
+        
+        <li><a href="{{ url_for('anuncios') }}" class="{% if request.endpoint == 'anuncios' %}active{% endif %}">
+          <i class="fa fa-bullhorn"></i> Notícias
+        </a></li>
+        
+        {% if g.user %}
+          {% if g.user['papel'] == 'admin' %}
+            <li class="liceu-nav-dropdown">
+              <a href="#" class="{% if request.endpoint and request.endpoint.startswith('admin.') %}active{% endif %}">
+                <i class="fa fa-cogs"></i> Diretório <i class="fa fa-chevron-down"></i>
+              </a>
+              <ul class="liceu-nav-submenu">
+                <li><a href="{{ url_for('admin.aprovar_alunos') }}"><i class="fa fa-user-check"></i> Aprovar Matrículas</a></li>
+                <li><a href="{{ url_for('admin.cursos') }}"><i class="fa fa-book"></i> Cursos</a></li>
+                <li><a href="{{ url_for('admin.disciplinas') }}"><i class="fa fa-book-open"></i> Disciplinas</a></li>
+                <li><a href="{{ url_for('admin.turmas') }}"><i class="fa fa-users"></i> Turmas</a></li>
+                <li><a href="{{ url_for('admin.matricular') }}"><i class="fa fa-user-plus"></i> Matrícula</a></li>
+              </ul>
+            </li>
           {% endif %}
-        {% endfor %}
-      </nav>
-    {% endif %}
-  {% endblock %}
-  <div id="toast-container"></div>
-  {% for message in get_flashed_messages() %}
-    <div class="flash" style="display:none;">{{ message }}</div>
-  {% endfor %}
-  {% block content %}{% endblock %}
-</div>
+          
+          {% if g.user['papel'] == 'professor' %}
+            <li><a href="{{ url_for('professor.index') }}" class="{% if request.endpoint and request.endpoint.startswith('professor.') %}active{% endif %}">
+              <i class="fa fa-chalkboard-teacher"></i> Minha Área
+            </a></li>
+            <li><a href="{{ url_for('professor.horario') }}">
+              <i class="fa fa-calendar"></i> Horário
+            </a></li>
+          {% endif %}
+          
+          {% if g.user['papel'] == 'aluno' %}
+            <li><a href="{{ url_for('student.student_area') }}" class="{% if request.endpoint and request.endpoint.startswith('student.') %}active{% endif %}">
+              <i class="fa fa-user-graduate"></i> Área do Estudante
+            </a></li>
+            <li><a href="{{ url_for('perfil.perfil') }}">
+              <i class="fa fa-id-card"></i> Meus Dados
+            </a></li>
+          {% endif %}
+        {% else %}
+          <li><a href="{{ url_for('auth.pre_register') }}">
+            <i class="fa fa-user-plus"></i> Pré-Inscrição
+          </a></li>
+        {% endif %}
+      </ul>
+      
+      <button class="liceu-nav-toggle" onclick="toggleMobileNav()">
+        <i class="fa fa-bars"></i>
+      </button>
+    </nav>
+  </header>
+
+  <!-- Layout com Sidebar + Conteúdo -->
+  <div class="liceu-container">
+    
+    <!-- Sidebar Esquerda -->
+    <aside class="liceu-sidebar">
+      <div class="liceu-sidebar-section">
+        <h4><i class="fa fa-bolt"></i> Acesso Rápido</h4>
+        <ul class="liceu-sidebar-menu">
+          {% if g.user %}
+            {% if g.user['papel'] == 'admin' %}
+              <li><a href="{{ url_for('admin.turmas') }}"><i class="fa fa-users"></i> Turmas</a></li>
+              <li><a href="{{ url_for('admin.aprovar_alunos') }}"><i class="fa fa-user-check"></i> Aprovar Alunos</a></li>
+              <li><a href="{{ url_for('admin.anuncios') }}"><i class="fa fa-bullhorn"></i> Gerir Avisos</a></li>
+              <li><a href="{{ url_for('auth.register') }}"><i class="fa fa-user-plus"></i> Novo Usuário</a></li>
+            {% elif g.user['papel'] == 'professor' %}
+              <li><a href="{{ url_for('professor.horario') }}"><i class="fa fa-calendar"></i> Meu Horário</a></li>
+              <li><a href="{{ url_for('professor.index') }}"><i class="fa fa-chalkboard"></i> Minhas Turmas</a></li>
+            {% elif g.user['papel'] == 'aluno' %}
+              <li><a href="{{ url_for('student.student_area') }}"><i class="fa fa-book"></i> Minhas Notas</a></li>
+              <li><a href="{{ url_for('perfil.perfil') }}"><i class="fa fa-id-card"></i> Meu Perfil</a></li>
+            {% endif %}
+            
+            <li class="sidebar-divider"></li>
+            <li><a href="{{ url_for('anuncios') }}"><i class="fa fa-newspaper"></i> Avisos</a></li>
+          {% else %}
+            <li><a href="{{ url_for('auth.pre_register') }}"><i class="fa fa-user-plus"></i> Inscrever-se</a></li>
+            <li><a href="{{ url_for('auth.login') }}"><i class="fa fa-sign-in-alt"></i> Entrar</a></li>
+          {% endif %}
+        </ul>
+      </div>
+      
+      {% if g.user %}
+        <div class="liceu-sidebar-section">
+          <h4><i class="fa fa-cog"></i> Preferências</h4>
+          <ul class="liceu-sidebar-menu">
+            <li>
+              <button onclick="toggleDarkMode()" class="liceu-theme-toggle">
+                <i id="darkmode-icon" class="fa fa-moon"></i> <span id="theme-label">Tema Escuro</span>
+              </button>
+            </li>
+          </ul>
+        </div>
+      {% endif %}
+    </aside>
+
+    <!-- Conteúdo Principal -->
+    <main class="liceu-main">
+      {% block breadcrumbs %}
+        {% if breadcrumbs %}
+          <nav class="liceu-breadcrumbs">
+            {% for crumb in breadcrumbs %}
+              {% if not loop.last %}
+                <a href="{{ crumb.url }}">{{ crumb.name }}</a>
+                <i class="fa fa-angle-right"></i>
+              {% else %}
+                <span>{{ crumb.name }}</span>
+              {% endif %}
+            {% endfor %}
+          </nav>
+        {% endif %}
+      {% endblock %}
+      
+      <div class="liceu-page-header">
+        {% block header %}{% endblock %}
+      </div>
+      
+      <!-- Mensagens Flash -->
+      <div id="toast-container"></div>
+      {% for message in get_flashed_messages() %}
+        <div class="flash" style="display:none;">{{ message }}</div>
+      {% endfor %}
+      
+      <!-- Conteúdo da Página -->
+      <div class="liceu-content">
+        {% block content %}{% endblock %}
+      </div>
+    </main>
+  </div>
+
+  <!-- Footer -->
+  <footer class="liceu-footer">
+    <p>&copy; 2026 Liceu de Cabinda. Sistema de Gestão Escolar.</p>
+  </footer>
+
 </body>
 </html>
