@@ -40,6 +40,7 @@
       {% endif %}
       {% if g.user['papel'] == 'aluno' %}
         <li><a href="{{ url_for('student.student_area') }}"><i class="fa fa-user-graduate"></i> Área do Estudante</a></li>
+        <li><a href="{{ url_for('perfil.perfil') }}"><i class="fa fa-id-card"></i> Meu Perfil</a></li>
       {% endif %}
       <li><a href="{{ url_for('auth.logout') }}"><i class="fa fa-sign-out-alt"></i> Sair</a></li>
     {% else %}

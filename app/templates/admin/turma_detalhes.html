@@ -53,7 +53,7 @@
     <tbody>
       {% for aluno in alunos %}
         <tr>
-          <td>{{ aluno['nome'] }}</td>
+          <td><a href="{{ url_for('perfil.perfil', aluno_id=aluno['id']) }}">{{ aluno['nome'] }}</a></td>
           <td>{{ aluno['email'] }}</td>
           <td>{{ aluno['status'] }}</td>
         </tr>

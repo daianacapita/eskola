@@ -15,6 +15,23 @@
       <div class="perfil-status {{ status_style }}">{{ status_label }}</div>
     </div>
 
+    {% if aluno and preinscricao %}
+      <div class="perfil-aviso">
+        <i class="fa fa-info-circle"></i>
+        <strong>Dados cadastrais atuais.</strong> Para visualizar os documentos originais da pré-inscrição, veja a seção "Documentos da Inscrição" abaixo.
+      </div>
+    {% elif aluno %}
+      <div class="perfil-aviso">
+        <i class="fa fa-info-circle"></i>
+        <strong>Dados cadastrais do aluno matriculado.</strong> Para alterar qualquer informação, solicite à secretaria.
+      </div>
+    {% elif preinscricao %}
+      <div class="perfil-aviso">
+        <i class="fa fa-info-circle"></i>
+        <strong>Inscrição pendente de aprovação.</strong> Os dados abaixo são o que foi informado na pré-inscrição.
+      </div>
+    {% endif %}
+
     <div class="perfil-grid">
       <div class="perfil-card">
         <h3>Dados pessoais</h3>
@@ -48,22 +65,23 @@
         <h3>Curso e classe</h3>
         <div class="perfil-list">
           <div><span>Curso pretendido</span><strong>{{ curso['nome'] if curso else '-' }}</strong></div>
-          <div><span>Classe pretendida</span><strong>{{ perfil['ano_preferido'] or '-' }}</strong></div>
+          <div><span>Classe pretendida</span><strong>{{ perfil['ano_preferido'] or '-' }}ª Classe</strong></div>
         </div>
       </div>
 
       <div class="perfil-card">
-        <h3>Documentos</h3>
+        <h3>{% if aluno %}Documentos da Inscrição{% else %}Documentos{% endif %}</h3>
         {% if preinscricao and (preinscricao['documento_anterior_path'] or preinscricao['bilhete_path']) %}
+          <p class="perfil-docs-descricao">{% if aluno %}Documentos enviados durante a pré-inscrição:{% endif %}</p>
           <div class="perfil-docs">
             {% if preinscricao['documento_anterior_path'] %}
-              <a class="perfil-doc" href="{{ url_for('auth.download_documento', preinscricao_id=preinscricao['id'], doc_type='documento_anterior') }}">
-                Certificado/Declaracao
+              <a class="perfil-doc" href="{{ url_for('auth.download_documento', preinscricao_id=preinscricao['id'], doc_type='documento_anterior') }}" target="_blank">
+                <i class="fa fa-download"></i> Certificado/Declaração
               </a>
             {% endif %}
             {% if preinscricao['bilhete_path'] %}
-              <a class="perfil-doc" href="{{ url_for('auth.download_documento', preinscricao_id=preinscricao['id'], doc_type='bilhete') }}">
-                Bilhete de Identidade
+              <a class="perfil-doc" href="{{ url_for('auth.download_documento', preinscricao_id=preinscricao['id'], doc_type='bilhete') }}" target="_blank">
+                <i class="fa fa-download"></i> Bilhete de Identidade
               </a>
             {% endif %}
           </div>
@@ -73,40 +91,59 @@
       </div>
 
       <div class="perfil-card">
-        <h3>Status da inscricao</h3>
+        <h3>Status da inscrição</h3>
         <p class="perfil-status-msg">{{ status_label }}</p>
         {% if preinscricao and preinscricao['data_preinscricao'] %}
-          <p class="perfil-nota">Data de inscricao: {{ preinscricao['data_preinscricao'] }}</p>
+          <p class="perfil-nota"><i class="fa fa-calendar"></i> Inscrição em: {{ preinscricao['data_preinscricao'] }}</p>
+        {% endif %}
+        {% if preinscricao and preinscricao['data_aprovacao'] and preinscricao['status'] == 'aprovado' %}
+          <p class="perfil-nota"><i class="fa fa-check-circle"></i> Aprovado em: {{ preinscricao['data_aprovacao'] }}</p>
         {% endif %}
       </div>
     </div>
 
     {% if is_admin and preinscricao and preinscricao['status'] == 'pendente' %}
       <div class="perfil-admin">
-        <h3>Aprovacao do admin</h3>
+        <h3><i class="fa fa-cogs"></i> Ações do Administrador</h3>
         {% if turmas %}
-          <form method="post" action="{{ url_for('admin.aprovar_aluno', preinscricao_id=preinscricao['id']) }}" class="perfil-admin-form">
-            <label for="turma_id">Selecionar turma</label>
-            <select name="turma_id" id="turma_id" required>
-              <option value="">-- Escolher Turma --</option>
-              {% for turma in turmas %}
-                <option value="{{ turma['id'] }}">{{ turma['designacao'] }} ({{ turma['curso_nome'] }})</option>
-              {% endfor %}
-            </select>
-            <button type="submit" class="btn btn-primary">Aprovar e matricular</button>
-          </form>
+          <div class="perfil-admin-form">
+            <h4>Aprovar inscrição e matricular em turma</h4>
+            <form method="post" action="{{ url_for('admin.aprovar_aluno', preinscricao_id=preinscricao['id']) }}">
+              <div class="form-group">
+                <label for="turma_id">Selecionar turma:</label>
+                <select name="turma_id" id="turma_id" required>
+                  <option value="">-- Escolher Turma --</option>
+                  {% for turma in turmas %}
+                    <option value="{{ turma['id'] }}">{{ turma['designacao'] }} ({{ turma['curso_nome'] }})</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <button type="submit" class="btn btn-primary">Aprovar e matricular</button>
+            </form>
+          </div>
         {% else %}
-          <p class="perfil-vazio">Nenhuma turma disponivel para o curso e ano pretendidos.</p>
+          <p class="perfil-vazio"><i class="fa fa-exclamation-triangle"></i> Nenhuma turma disponível para o curso e ano pretendidos.</p>
         {% endif %}
 
-        <form method="post" action="{{ url_for('admin.rejeitar_preinscricao', preinscricao_id=preinscricao['id']) }}" class="perfil-admin-form">
-          <button type="submit" class="btn btn-danger">Rejeitar inscricao</button>
-        </form>
+        <div class="perfil-admin-form">
+          <form method="post" action="{{ url_for('admin.rejeitar_preinscricao', preinscricao_id=preinscricao['id']) }}">
+            <button type="submit" class="btn btn-danger">Rejeitar inscrição</button>
+          </form>
+        </div>
+      </div>
+    {% elif is_admin and preinscricao and preinscricao['status'] == 'rejeitado' %}
+      <div class="perfil-admin">
+        <p class="perfil-rejeitado"><i class="fa fa-times-circle"></i> Esta inscrição foi rejeitada em {{ preinscricao['data_aprovacao'] }} pelo administrador.</p>
       </div>
     {% endif %}
 
     <div class="perfil-acoes">
-      <button type="button" class="btn btn-secondary" disabled>Editar dados (em breve)</button>
+      {% if not is_admin %}
+        <button type="button" class="btn btn-secondary" disabled title="Edição em breve">
+          <i class="fa fa-edit"></i> Editar dados (em breve)
+        </button>
+      {% endif %}
+      <a href="javascript:history.back()" class="btn btn-secondary"><i class="fa fa-arrow-left"></i> Voltar</a>
     </div>
   </div>
 {% endblock %}

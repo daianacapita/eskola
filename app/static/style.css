@@ -83,16 +83,32 @@
 .perfil-nome {
 	margin: 0;
 	font-size: 1.6em;
+	color: #23272e;
 }
 .perfil-sub {
 	margin: 0.2em 0 0 0;
 	color: #666;
+	font-size: 0.95em;
 }
 .perfil-status {
-	padding: 0.4em 0.8em;
+	padding: 0.5em 1em;
 	border-radius: 999px;
 	font-weight: 600;
 	font-size: 0.95em;
+	white-space: nowrap;
+}
+.perfil-aviso {
+	background: #e9f3fa;
+	color: #1a3c5c;
+	border-left: 4px solid #377ba8;
+	padding: 0.8em 1em;
+	margin-bottom: 1.2em;
+	border-radius: 4px;
+	font-size: 0.95em;
+}
+.perfil-aviso i {
+	margin-right: 0.5em;
+	color: #377ba8;
 }
 .status-pendente {
 	background: #f7edd0;
@@ -108,70 +124,148 @@
 }
 .perfil-grid {
 	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+	grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
 	gap: 1em;
+	margin-bottom: 1.5em;
 }
 .perfil-card {
 	background: #fff;
 	border: 1px solid #e0e0e0;
 	border-radius: 8px;
-	padding: 1em;
+	padding: 1.1em;
 	box-shadow: 0 2px 8px rgba(0,0,0,0.04);
 }
 .perfil-card h3 {
-	margin-top: 0;
+	margin: 0 0 0.8em 0;
 	color: #377ba8;
+	font-size: 1.05em;
+	border-bottom: 2px solid #f0f0f0;
+	padding-bottom: 0.5em;
 }
 .perfil-list div {
 	display: flex;
 	justify-content: space-between;
 	gap: 0.8em;
 	border-bottom: 1px dashed #eee;
-	padding: 0.35em 0;
+	padding: 0.5em 0;
+}
+.perfil-list div:last-child {
+	border-bottom: none;
 }
 .perfil-list div span {
-	color: #555;
+	color: #666;
+	font-size: 0.9em;
+	font-weight: 500;
+}
+.perfil-list div strong {
+	color: #23272e;
+	text-align: right;
+	word-break: break-word;
 }
 .perfil-docs {
 	display: flex;
 	flex-direction: column;
 	gap: 0.6em;
 }
+.perfil-docs-descricao {
+	margin: 0 0 0.6em 0;
+	color: #666;
+	font-size: 0.9em;
+	font-style: italic;
+}
 .perfil-doc {
 	color: #377ba8;
 	text-decoration: none;
 	font-weight: 600;
+	padding: 0.5em;
+	border-radius: 4px;
+	transition: all 0.2s;
 }
 .perfil-doc:hover {
+	background: #f0f0f0;
 	text-decoration: underline;
+}
+.perfil-doc i {
+	margin-right: 0.5em;
 }
 .perfil-vazio {
 	color: #999;
 	font-style: italic;
+	margin: 0;
+	padding: 0.5em 0;
 }
 .perfil-status-msg {
-	margin: 0;
+	margin: 0 0 0.6em 0;
 	font-weight: 600;
+	font-size: 1.05em;
+	color: #377ba8;
 }
 .perfil-nota {
-	margin: 0.3em 0 0 0;
+	margin: 0.4em 0 0 0;
 	color: #666;
+	font-size: 0.9em;
+}
+.perfil-nota i {
+	margin-right: 0.4em;
+	color: #999;
 }
 .perfil-admin {
 	margin-top: 1.5em;
 	background: #fff;
 	border: 1px solid #e0e0e0;
 	border-radius: 8px;
-	padding: 1em;
+	padding: 1.2em;
+	box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+.perfil-admin h3 {
+	margin-top: 0;
+	color: #377ba8;
+}
+.perfil-admin h4 {
+	margin: 0.8em 0 0.6em 0;
+	font-size: 0.95em;
+	color: #23272e;
 }
 .perfil-admin-form {
-	margin-top: 0.8em;
-	display: flex;
-	flex-direction: column;
-	gap: 0.6em;
+	margin-bottom: 1.2em;
+	padding-bottom: 1.2em;
+	border-bottom: 1px dashed #eee;
+}
+.perfil-admin-form:last-child {
+	margin-bottom: 0;
+	padding-bottom: 0;
+	border-bottom: none;
+}
+.perfil-admin-form .form-group {
+	margin-bottom: 0.8em;
+}
+.perfil-admin-form .form-group label {
+	display: block;
+	margin-bottom: 0.3em;
+	font-weight: 600;
+}
+.perfil-admin-form .form-group select {
+	width: 100%;
+	padding: 0.5em;
+	border: 1px solid #bbb;
+	border-radius: 4px;
+	font-size: 0.95em;
+}
+.perfil-rejeitado {
+	color: #8a1c1c;
+	background: #f7d7d7;
+	padding: 0.8em;
+	border-radius: 4px;
+	font-weight: 600;
+}
+.perfil-rejeitado i {
+	margin-right: 0.5em;
 }
 .perfil-acoes {
-	margin-top: 1.2em;
+	display: flex;
+	gap: 0.8em;
+	margin-top: 1.5em;
+	flex-wrap: wrap;
 }
 .btn {
 	display: inline-block;
