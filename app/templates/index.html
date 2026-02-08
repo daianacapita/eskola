@@ -36,8 +36,7 @@
   {% set quick_links = [
     {'url': url_for('auth.login'), 'icon': 'fa-sign-in-alt', 'text': 'Login'},
     {'url': url_for('auth.pre_register'), 'icon': 'fa-user-plus', 'text': 'Pré-Inscrição'},
-    {'url': url_for('anuncios'), 'icon': 'fa-bullhorn', 'text': 'Notícias'},
-    {'url': url_for('verificar_boletim'), 'icon': 'fa-file-alt', 'text': 'Boletim'}
+    {'url': url_for('verificar_boletim'), 'icon': 'fa-file-alt', 'text': 'Verificar Boletim'}
   ] %}
   {{ widget_quick_links(quick_links) }}
   

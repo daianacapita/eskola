@@ -1,20 +1,126 @@
 {% extends 'base.html' %}
+{% from "_widgets.html" import widget_card %}
+
+{% block title %}Verificar Boletim{% endblock %}
+
 {% block content %}
-<div class="container mt-4">
-  <h2>Verificação de Autenticidade do Boletim</h2>
-  {% if not valido %}
-    <div class="alert alert-danger mt-3">Boletim não encontrado ou token inválido.</div>
+<div class="liceu-page-header">
+  <h1>Verificação de Autenticidade do Boletim</h1>
+</div>
+
+<div class="liceu-content">
+  
+  {% if valido is none %}
+    {# Formulário para inserir token #}
+    {% call widget_card('Verificar Boletim', 'fa-file-alt') %}
+      <p>Insira o código de verificação (token) que aparece no rodapé do seu boletim em PDF para confirmar sua autenticidade.</p>
+      
+      <form method="get" action="" style="margin-top: var(--spacing-lg);">
+        <div class="grupo-form" style="max-width: 500px; margin: 0 auto;">
+          <label for="token" style="font-weight: 600; margin-bottom: var(--spacing-sm);">
+            <i class="fa fa-key"></i> Código de Verificação:
+          </label>
+          <input 
+            type="text" 
+            id="token" 
+            name="token" 
+            placeholder="Insira o código aqui..."
+            required
+            style="width: 100%; padding: var(--spacing-md); border: 1px solid var(--liceu-gray-300); border-radius: var(--border-radius); font-family: monospace;"
+          >
+          
+          <button type="submit" class="btn btn-primary" style="margin-top: var(--spacing-lg); width: 100%;">
+            <i class="fa fa-check-circle"></i> Verificar Boletim
+          </button>
+        </div>
+      </form>
+      
+      <div style="margin-top: var(--spacing-xl); padding: var(--spacing-md); background: var(--liceu-gray-50); border-radius: var(--border-radius); text-align: center;">
+        <small style="color: var(--liceu-gray-700);">
+          <i class="fa fa-info-circle"></i> 
+          O código de verificação é gerado automaticamente ao exportar o boletim em PDF.
+        </small>
+      </div>
+    {% endcall %}
+    
+  {% elif valido == false %}
+    {# Token inválido #}
+    {% call widget_card('Boletim Não Encontrado', 'fa-exclamation-triangle', 'danger') %}
+      <div style="text-align: center; padding: var(--spacing-xl);">
+        <i class="fa fa-times-circle" style="font-size: 4rem; color: var(--liceu-danger); margin-bottom: var(--spacing-md);"></i>
+        <p style="font-size: 1.1rem; color: var(--liceu-gray-700);">
+          O código de verificação fornecido é inválido ou o boletim não foi encontrado no sistema.
+        </p>
+        <a href="{{ url_for('verificar_boletim') }}" class="btn btn-secondary" style="margin-top: var(--spacing-lg);">
+          <i class="fa fa-redo"></i> Tentar Novamente
+        </a>
+      </div>
+    {% endcall %}
+    
   {% else %}
-    <div class="alert alert-success mt-3">Boletim válido!</div>
-    <table class="table table-bordered mt-3" style="max-width: 500px;">
-      <tr><th>Aluno</th><td>{{ boletim.aluno_nome }}</td></tr>
-      <tr><th>Turma</th><td>{{ boletim.designacao }}</td></tr>
-      <tr><th>Ano</th><td>{{ boletim.ano }}</td></tr>
-      <tr><th>Ano Letivo</th><td>{{ boletim.ano_letivo }}</td></tr>
-      <tr><th>Curso</th><td>{{ boletim.curso_nome }}</td></tr>
-      <tr><th>Data de Emissão</th><td>{{ boletim.data_emissao }}</td></tr>
-    </table>
-    <div class="alert alert-info">Este boletim foi emitido digitalmente pelo sistema eskola.<br>Para mais informações, entre em contato com a secretaria da escola.</div>
+    {# Token válido #}
+    {% call widget_card('Boletim Verificado com Sucesso', 'fa-check-circle', 'success') %}
+      <div style="text-align: center; padding: var(--spacing-lg) 0;">
+        <i class="fa fa-certificate" style="font-size: 4rem; color: var(--liceu-success); margin-bottom: var(--spacing-md);"></i>
+        <p style="font-size: 1.1rem; color: var(--liceu-success); font-weight: 600;">
+          ✓ Este boletim é autêntico e foi emitido pelo sistema Liceu de Cabinda
+        </p>
+      </div>
+      
+      <table style="width: 100%; max-width: 600px; margin: var(--spacing-xl) auto; border-collapse: collapse;">
+        <tr style="border-bottom: 1px solid var(--liceu-gray-200);">
+          <th style="padding: var(--spacing-md); text-align: left; background: var(--liceu-gray-50); width: 40%;">
+            <i class="fa fa-user"></i> Aluno
+          </th>
+          <td style="padding: var(--spacing-md);">{{ boletim.aluno_nome }}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid var(--liceu-gray-200);">
+          <th style="padding: var(--spacing-md); text-align: left; background: var(--liceu-gray-50);">
+            <i class="fa fa-users"></i> Turma
+          </th>
+          <td style="padding: var(--spacing-md);">{{ boletim.designacao }}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid var(--liceu-gray-200);">
+          <th style="padding: var(--spacing-md); text-align: left; background: var(--liceu-gray-50);">
+            <i class="fa fa-calendar"></i> Ano
+          </th>
+          <td style="padding: var(--spacing-md);">{{ boletim.ano }}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid var(--liceu-gray-200);">
+          <th style="padding: var(--spacing-md); text-align: left; background: var(--liceu-gray-50);">
+            <i class="fa fa-calendar-alt"></i> Ano Letivo
+          </th>
+          <td style="padding: var(--spacing-md);">{{ boletim.ano_letivo }}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid var(--liceu-gray-200);">
+          <th style="padding: var(--spacing-md); text-align: left; background: var(--liceu-gray-50);">
+            <i class="fa fa-graduation-cap"></i> Curso
+          </th>
+          <td style="padding: var(--spacing-md);">{{ boletim.curso_nome }}</td>
+        </tr>
+        <tr>
+          <th style="padding: var(--spacing-md); text-align: left; background: var(--liceu-gray-50);">
+            <i class="fa fa-clock"></i> Data de Emissão
+          </th>
+          <td style="padding: var(--spacing-md);">{{ boletim.data_emissao }}</td>
+        </tr>
+      </table>
+      
+      <div style="margin-top: var(--spacing-xl); padding: var(--spacing-lg); background: var(--liceu-gray-50); border-left: 4px solid var(--liceu-info); border-radius: var(--border-radius);">
+        <p style="margin: 0; color: var(--liceu-gray-700);">
+          <i class="fa fa-info-circle" style="color: var(--liceu-info);"></i> 
+          <strong>Informação:</strong> Este boletim foi emitido digitalmente pelo Sistema de Gestão Escolar do Liceu de Cabinda.
+          Para mais informações ou esclarecimentos, entre em contato com a secretaria da escola.
+        </p>
+      </div>
+      
+      <div style="text-align: center; margin-top: var(--spacing-lg);">
+        <a href="{{ url_for('verificar_boletim') }}" class="btn btn-secondary">
+          <i class="fa fa-search"></i> Verificar Outro Boletim
+        </a>
+      </div>
+    {% endcall %}
   {% endif %}
+  
 </div>
 {% endblock %}

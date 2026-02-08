@@ -42,10 +42,6 @@
     <nav class="liceu-nav">
       <ul class="liceu-nav-menu">
         <li><a href="{{ url_for('index') }}" class="{% if request.endpoint == 'index' %}active{% endif %}">
-          <i class="fa fa-home"></i> Início
-        </a></li>
-        
-        <li><a href="{{ url_for('anuncios') }}" class="{% if request.endpoint == 'anuncios' %}active{% endif %}">
           <i class="fa fa-bullhorn"></i> Notícias
         </a></li>
         
@@ -118,7 +114,7 @@
             {% endif %}
             
             <li class="sidebar-divider"></li>
-            <li><a href="{{ url_for('anuncios') }}"><i class="fa fa-newspaper"></i> Avisos</a></li>
+            <li><a href="{{ url_for('index') }}"><i class="fa fa-newspaper"></i> Avisos</a></li>
           {% else %}
             <li><a href="{{ url_for('auth.pre_register') }}"><i class="fa fa-user-plus"></i> Inscrever-se</a></li>
             <li><a href="{{ url_for('auth.login') }}"><i class="fa fa-sign-in-alt"></i> Entrar</a></li>

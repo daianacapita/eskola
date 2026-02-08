@@ -1,4 +1,4 @@
-from flask import Flask, render_template, g, session
+from flask import Flask, render_template, g, session, request, redirect, url_for
 import os
 from .db import get_db
 
@@ -35,10 +35,24 @@ def create_app(test_config=None):
             ).fetchone()
 
     @app.route("/")
+    @app.route('/anuncios')
     def index():
+        """Rota unificada: Início = Notícias/Anúncios"""
         db = get_db()
-        anuncios = db.execute('SELECT titulo, conteudo, data_publicacao FROM Anuncios ORDER BY data_publicacao DESC LIMIT 5').fetchall()
-        return render_template('index.html', anuncios=anuncios)
+        anuncios = db.execute('SELECT titulo, conteudo, data_publicacao FROM Anuncios ORDER BY data_publicacao DESC').fetchall()
+        return render_template('anuncios.html', anuncios=anuncios)
+    
+    # Alias para compatibilidade
+    app.add_url_rule('/inicio', 'inicio', index)
+    
+    @app.route('/verificar_boletim')
+    def verificar_boletim():
+        """Página pública para verificar boletim inserindo token"""
+        token = request.args.get('token')
+        if token:
+            # Redirecionar para a rota do blueprint student que valida o token
+            return redirect(url_for('student.verificar_boletim', token=token))
+        return render_template('verificar_boletim.html', valido=None)
     
     from . import db
     db.init_app(app)
@@ -57,11 +71,5 @@ def create_app(test_config=None):
 
     from . import perfil
     app.register_blueprint(perfil.bp)
-
-    @app.route('/anuncios')
-    def anuncios():
-        db = get_db()
-        anuncios = db.execute('SELECT titulo, conteudo, data_publicacao FROM Anuncios ORDER BY data_publicacao DESC').fetchall()
-        return render_template('anuncios.html', anuncios=anuncios)
     
     return app

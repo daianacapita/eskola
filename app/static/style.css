@@ -387,6 +387,27 @@ body.liceu-layout {
 	transform: translateY(-2px);
 }
 
+/* Widget color variations */
+.widget-danger .widget-header i,
+.widget-danger .widget-header h3 {
+	color: var(--liceu-danger);
+}
+
+.widget-success .widget-header i,
+.widget-success .widget-header h3 {
+	color: var(--liceu-success);
+}
+
+.widget-warning .widget-header i,
+.widget-warning .widget-header h3 {
+	color: var(--liceu-warning);
+}
+
+.widget-info .widget-header i,
+.widget-info .widget-header h3 {
+	color: var(--liceu-info);
+}
+
 .widget-header {
 	display: flex;
 	align-items: center;
