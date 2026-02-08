@@ -92,6 +92,34 @@ CREATE TABLE Usuarios (
   )
 );
 
+-- Pré-inscrições com documentos
+CREATE TABLE PreInscricoes (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  nome TEXT NOT NULL,
+  data_nascimento DATE NOT NULL,
+  email TEXT NOT NULL,
+  telefone TEXT,
+  endereco TEXT,
+  numero_bilhete TEXT NOT NULL,
+  genero TEXT CHECK(genero IN ('M','F','Outro')),
+  nome_pai TEXT,
+  nome_mae TEXT,
+  telefone_encarregado TEXT,
+  curso_preferido_id INTEGER REFERENCES Cursos(id),
+  ano_preferido INTEGER CHECK(ano_preferido >= 10 AND ano_preferido <= 12),
+  -- Documentos
+  documento_anterior_path TEXT,
+  bilhete_path TEXT,
+  -- Status
+  status TEXT NOT NULL DEFAULT 'pendente' CHECK(status IN ('pendente','aprovado','rejeitado')),
+  data_preinscricao TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  data_aprovacao TIMESTAMP,
+  admin_id INTEGER REFERENCES Usuarios(id) ON DELETE SET NULL,
+  -- Acesso para login tempora during pré-inscrição
+  username TEXT UNIQUE NOT NULL,
+  password TEXT NOT NULL
+);
+
 -- ============================================================
 -- Anúncios e Comunicados
 -- ============================================================
@@ -282,6 +310,10 @@ CREATE INDEX idx_presencas_matricula_id ON Presencas(matricula_id);
 CREATE INDEX idx_usuarios_papel ON Usuarios(papel);
 CREATE INDEX idx_usuarios_professor_id ON Usuarios(professor_id);
 CREATE INDEX idx_usuarios_aluno_id ON Usuarios(aluno_id);
+
+CREATE INDEX idx_preinscricoes_email ON PreInscricoes(email);
+CREATE INDEX idx_preinscricoes_status ON PreInscricoes(status);
+CREATE INDEX idx_preinscricoes_data ON PreInscricoes(data_preinscricao);
 
 -- ============================================================
 -- Seed (opcional): AnoLectivo e admin

@@ -6,7 +6,7 @@
 {% endblock %}
 
 {% block content %}
-  <form method="post" class="form-preinscricao">
+  <form method="post" enctype="multipart/form-data" class="form-preinscricao">
     <div class="form-info-topo">
       <strong>Pré-inscrição em etapas:</strong> Preencha seus dados abaixo. Os campos estão agrupados para facilitar o preenchimento e a validação.
     </div>
@@ -61,7 +61,18 @@
       </select>
     </fieldset>
     <fieldset class="grupo-form">
-      <legend>5. Documentos e Acesso</legend>
+      <legend>5. Documentos Obrigatórios</legend>
+      <p style="font-style: italic; color: #666;">Formatos aceitos: PDF, JPG, PNG. Tamanho máximo: 4MB por arquivo.</p>
+      <label for="documento_anterior">Certificado/Declaração da Classe Anterior <span style="color: red;">*</span></label>
+      <input type="file" name="documento_anterior" id="documento_anterior" accept=".pdf,.jpg,.jpeg,.png" required>
+      <small>Carregue seu certificado ou declaração da classe anterior</small>
+      
+      <label for="bilhete">Bilhete de Identidade <span style="color: red;">*</span></label>
+      <input type="file" name="bilhete" id="bilhete" accept=".pdf,.jpg,.jpeg,.png" required>
+      <small>Carregue uma cópia do seu Bilhete de Identidade</small>
+    </fieldset>
+    <fieldset class="grupo-form">
+      <legend>6. Dados de Acesso</legend>
       <label for="username">Username</label>
       <input name="username" id="username" required>
       <label for="password">Password</label>

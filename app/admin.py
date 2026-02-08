@@ -1129,38 +1129,42 @@ def aprovar_alunos():
         return redirect(url_for('index'))
     
     db = get_db()
-    alunos_pendentes = db.execute('''
-        SELECT u.id as user_id, a.id as aluno_id, a.nome, a.email, a.curso_preferido_id, a.ano_preferido
-        FROM Usuarios u
-        JOIN Alunos a ON u.aluno_id = a.id
-        WHERE u.status = 'pendente' AND u.papel = 'aluno'
+    preinscricoes_pendentes = db.execute('''
+        SELECT id, nome, email, numero_bilhete, curso_preferido_id, ano_preferido, 
+               documento_anterior_path, bilhete_path, data_preinscricao
+        FROM PreInscricoes
+        WHERE status = 'pendente'
+        ORDER BY data_preinscricao DESC
     ''').fetchall()
     
-    # For each student, get matching turmas
-    alunos_com_turmas = []
-    for aluno in alunos_pendentes:
+    # For each pré-inscrição, get matching turmas
+    preinscricoes_com_turmas = []
+    for preinscricao in preinscricoes_pendentes:
         turmas = db.execute('''
             SELECT t.id, t.designacao, c.nome as curso_nome
             FROM Turmas t
             JOIN Cursos c ON t.curso_id = c.id
             WHERE t.curso_id = ? AND t.ano = ?
-        ''', (aluno['curso_preferido_id'], aluno['ano_preferido'])).fetchall()
-        alunos_com_turmas.append({
-            'user_id': aluno['user_id'],
-            'aluno_id': aluno['aluno_id'],
-            'nome': aluno['nome'],
-            'email': aluno['email'],
+        ''', (preinscricao['curso_preferido_id'], preinscricao['ano_preferido'])).fetchall()
+        preinscricoes_com_turmas.append({
+            'preinscricao_id': preinscricao['id'],
+            'nome': preinscricao['nome'],
+            'email': preinscricao['email'],
+            'numero_bilhete': preinscricao['numero_bilhete'],
+            'data_preinscricao': preinscricao['data_preinscricao'],
+            'documento_anterior_path': preinscricao['documento_anterior_path'],
+            'bilhete_path': preinscricao['bilhete_path'],
             'turmas': turmas
         })
     
-    return render_template('admin/aprovar_alunos.html', alunos=alunos_com_turmas)
+    return render_template('admin/aprovar_alunos.html', preinscricoes=preinscricoes_com_turmas)
 
-@bp.route('/aprovar_aluno/<int:user_id>', methods=['POST'])
+@bp.route('/aprovar_aluno/<int:preinscricao_id>', methods=['POST'])
 @login_required
-def aprovar_aluno(user_id):
+def aprovar_aluno(preinscricao_id):
     if g.user['papel'] != 'admin':
         flash('Acesso negado.')
-        return redirect(url_for('index'))
+        return redirect(url_for('admin.aprovar_alunos'))
     
     turma_id = request.form.get('turma_id')
     if not turma_id:
@@ -1168,18 +1172,52 @@ def aprovar_aluno(user_id):
         return redirect(url_for('admin.aprovar_alunos'))
     
     db = get_db()
-    # Update status to ativo
-    db.execute('UPDATE Usuarios SET status = ? WHERE id = ?', ('ativo', user_id))
-    # Get aluno_id
-    user = db.execute('SELECT aluno_id FROM Usuarios WHERE id = ?', (user_id,)).fetchone()
-    if user:
-        aluno_id = user['aluno_id']
-        # Matricular
-        existing = db.execute('SELECT id FROM Matriculas WHERE aluno_id = ? AND turma_id = ?', (aluno_id, turma_id)).fetchone()
-        if not existing:
-            db.execute('INSERT INTO Matriculas (aluno_id, turma_id) VALUES (?, ?)', (aluno_id, turma_id))
-    db.commit()
-    flash('Aluno aprovado e matriculado.')
+    preinscricao = db.execute(
+        'SELECT * FROM PreInscricoes WHERE id = ?', (preinscricao_id,)
+    ).fetchone()
+    
+    if not preinscricao:
+        flash('Pré-inscrição não encontrada.')
+        return redirect(url_for('admin.aprovar_alunos'))
+    
+    # Criar aluno a partir da pré-inscrição
+    try:
+        db.execute('''
+            INSERT INTO Alunos (nome, data_nascimento, email, telefone, endereco, numero_bilhete, 
+                              genero, nome_pai, nome_mae, telefone_encarregado, curso_preferido_id, ano_preferido)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (preinscricao['nome'], preinscricao['data_nascimento'], preinscricao['email'],
+              preinscricao['telefone'], preinscricao['endereco'], preinscricao['numero_bilhete'],
+              preinscricao['genero'], preinscricao['nome_pai'], preinscricao['nome_mae'],
+              preinscricao['telefone_encarregado'], preinscricao['curso_preferido_id'], preinscricao['ano_preferido']))
+        
+        aluno_id = db.execute('SELECT last_insert_rowid()').fetchone()[0]
+        
+        # Criar usuário com status ativo
+        from werkzeug.security import generate_password_hash
+        db.execute('''
+            INSERT INTO Usuarios (username, password, email, papel, status, aluno_id)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (preinscricao['username'], preinscricao['password'], preinscricao['email'], 'aluno', 'ativo', aluno_id))
+        
+        # Matricular em turma
+        db.execute(
+            'INSERT INTO Matriculas (aluno_id, turma_id) VALUES (?, ?)',
+            (aluno_id, turma_id)
+        )
+        
+        # Marcar pré-inscrição como aprovada
+        db.execute(
+            'UPDATE PreInscricoes SET status = ?, data_aprovacao = CURRENT_TIMESTAMP, admin_id = ? WHERE id = ?',
+            ('aprovado', g.user['id'], preinscricao_id)
+        )
+        
+        db.commit()
+        flash(f'Aluno {preinscricao["nome"]} aprovado e matriculado com sucesso.')
+    except Exception as e:
+        db.rollback()
+        flash(f'Erro ao aprovar aluno: {str(e)}')
+    
     return redirect(url_for('admin.aprovar_alunos'))
 
 @bp.route('/anuncios')
