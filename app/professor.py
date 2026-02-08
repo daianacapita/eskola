@@ -244,3 +244,81 @@ def salvar_notas_disciplina(turma_disciplina_id):
     db.commit()
     flash(f'Notas do {trimestre_int}º trimestre salvas com sucesso.')
     return redirect(url_for('professor.notas_disciplina', turma_disciplina_id=turma_disciplina_id, trimestre=trimestre_int))
+
+
+# NOVA ROTA: Horário semanal do professor
+@bp.route('/horario')
+@professor_required
+def horario():
+    db = get_db()
+    professor_id = g.user['professor_id']
+
+    # Buscar docências ativas do professor
+    docencias = db.execute(
+        '''
+        SELECT td.id as turma_disciplina_id, t.id as turma_id, t.designacao, t.ano, t.periodo, d.nome as disciplina_nome, t.periodo, t.ano as turma_ano, c.nome as curso_nome, a.ano as ano_lectivo
+        FROM Docencia doc
+        JOIN TurmaDisciplinas td ON td.id = doc.turma_disciplina_id
+        JOIN Turmas t ON t.id = td.turma_id
+        JOIN Disciplinas d ON d.id = td.disciplina_id
+        JOIN Cursos c ON c.id = t.curso_id
+        JOIN AnoLectivo a ON a.id = t.ano_lectivo_id
+        WHERE doc.professor_id = ? AND doc.data_fim IS NULL
+        ORDER BY a.ano DESC, c.nome, t.ano, t.designacao, d.nome
+        ''',
+        (professor_id,)
+    ).fetchall()
+
+    # Organizar docências por turma
+    turmas = {}
+    for doc in docencias:
+        turma_id = doc['turma_id']
+        if turma_id not in turmas:
+            turmas[turma_id] = {
+                'info': doc,
+                'disciplinas': [],
+                'td_ids': set(),
+            }
+        turmas[turma_id]['disciplinas'].append(doc['disciplina_nome'])
+        turmas[turma_id]['td_ids'].add(doc['turma_disciplina_id'])
+
+    # Consolidar slots de todas as turmas do professor em uma única grade
+    from app.admin import get_tempos
+    # Descobrir todos períodos das turmas do professor
+    periodos = set(turma['info']['periodo'] for turma in turmas.values())
+    # Usar o maior número de tempos entre os períodos
+    tempos_dict = {p: get_tempos(p) for p in periodos}
+    max_periodo = max(tempos_dict, key=lambda p: len(tempos_dict[p]))
+    tempos = tempos_dict[max_periodo]
+    dias_semana = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta']
+
+    # Montar grade consolidada: [dia][tempo] = lista de slots (pode ter mais de uma aula do professor no mesmo horário)
+    grade = {dia: {tempo['tempo']: [] for tempo in tempos} for dia in range(1, 6)}
+
+    # Buscar todos slots de todas turmas do professor
+    for turma_id, turma in turmas.items():
+        slots = db.execute(
+            'SELECT dia_semana, tempo, turma_disciplina_id FROM Horarios WHERE turma_id = ?',
+            (turma_id,)
+        ).fetchall()
+        for slot in slots:
+            dia = slot['dia_semana']
+            tempo = slot['tempo']
+            td_id = slot['turma_disciplina_id']
+            # Só mostrar slots do professor
+            if td_id in turma['td_ids']:
+                grade[dia][tempo].append({
+                    'turma': turma['info']['designacao'],
+                    'disciplina': turma['info']['disciplina_nome'],
+                    'turma_id': turma_id,
+                    'td_id': td_id,
+                    'ano_letivo': turma['info']['ano_lectivo'],
+                    'curso': turma['info']['curso_nome'],
+                })
+
+    return render_template(
+        'professor/horario.html',
+        grade=grade,
+        tempos=tempos,
+        dias_semana=dias_semana,
+    )

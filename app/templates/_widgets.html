@@ -1,0 +1,114 @@
+<!-- Widgets/Cards Reutilizáveis para Dashboard -->
+
+{% macro widget_card(title, icon='fa-info-circle', color='primary') %}
+<div class="widget-card widget-{{ color }}">
+  <div class="widget-header">
+    <i class="fa {{ icon }}"></i>
+    <h3>{{ title }}</h3>
+  </div>
+  <div class="widget-body">
+    {{ caller() }}
+  </div>
+</div>
+{% endmacro %}
+
+{% macro widget_horario() %}
+<div class="widget-card">
+  <div class="widget-header">
+    <i class="fa fa-calendar-alt"></i>
+    <h3>Meu Horário</h3>
+  </div>
+  <div class="widget-body">
+    <p class="widget-placeholder">Calendário semanal</p>
+    <a href="{{ url_for('professor.horario') if g.user and g.user['papel'] == 'professor' else '#' }}" class="widget-link">
+      Ver horário completo <i class="fa fa-arrow-right"></i>
+    </a>
+  </div>
+</div>
+{% endmacro %}
+
+{% macro widget_avisos(avisos=[]) %}
+<div class="widget-card widget-avisos">
+  <div class="widget-header">
+    <i class="fa fa-bullhorn"></i>
+    <h3>Avisos Recentes</h3>
+  </div>
+  <div class="widget-body">
+    {% if avisos %}
+      <ul class="widget-list">
+        {% for aviso in avisos %}
+          <li>
+            <span class="widget-date">{{ aviso.data_publicacao }}</span>
+            <strong>{{ aviso.titulo }}</strong>
+            <p>{{ aviso.conteudo[:100] }}...</p>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="widget-placeholder">Nenhum aviso recente</p>
+    {% endif %}
+    <a href="{{ url_for('index') }}" class="widget-link">
+      Ver todos os avisos <i class="fa fa-arrow-right"></i>
+    </a>
+  </div>
+</div>
+{% endmacro %}
+
+{% macro widget_turmas(turmas=[]) %}
+<div class="widget-card">
+  <div class="widget-header">
+    <i class="fa fa-users"></i>
+    <h3>Minhas Turmas</h3>
+  </div>
+  <div class="widget-body">
+    {% if turmas %}
+      <ul class="widget-list">
+        {% for turma in turmas %}
+          <li>
+            <a href="{{ url_for('admin.turma_detalhes', id=turma.id) }}">
+              {{ turma.designacao }} - {{ turma.curso_nome }}
+            </a>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="widget-placeholder">Nenhuma turma atribuída</p>
+    {% endif %}
+  </div>
+</div>
+{% endmacro %}
+
+{% macro widget_stats(label, value, icon='fa-chart-line', trend=None) %}
+<div class="widget-stat">
+  <i class="fa {{ icon }}"></i>
+  <div class="widget-stat-content">
+    <span class="widget-stat-label">{{ label }}</span>
+    <span class="widget-stat-value">{{ value }}</span>
+    {% if trend %}
+      <span class="widget-stat-trend {{ 'trend-up' if trend > 0 else 'trend-down' }}">
+        <i class="fa {{ 'fa-arrow-up' if trend > 0 else 'fa-arrow-down' }}"></i>
+        {{ trend }}%
+      </span>
+    {% endif %}
+  </div>
+</div>
+{% endmacro %}
+
+{% macro widget_quick_links(links=[]) %}
+<div class="widget-card widget-links">
+  <div class="widget-header">
+    <i class="fa fa-link"></i>
+    <h3>Acesso Rápido</h3>
+  </div>
+  <div class="widget-body">
+    <div class="widget-grid">
+      {% for link in links %}
+        <a href="{{ link.url }}" class="widget-quick-link">
+          <i class="fa {{ link.icon }}"></i>
+          <span>{{ link.label }}</span>
+        </a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endmacro %}

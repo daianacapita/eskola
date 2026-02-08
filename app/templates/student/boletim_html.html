@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Boletim Escolar</h2>
+<p><b>Aluno:</b> {{ aluno_nome }}<br>
+<b>Turma:</b> {{ turma.designacao }} | <b>Classe:</b> {{ turma.classe }} | <b>Ano Letivo:</b> {{ turma.ano_letivo }}<br>
+<b>Curso:</b> {{ turma.curso_nome }}<br>
+<b>Emitido em:</b> {{ data_emissao }}
+</p>
+<table class="notas-aluno" border="1" cellpadding="6" cellspacing="0">
+  <thead>
+    <tr>
+      <th>Disciplina</th>
+      <th>1º Tri</th>
+      <th>2º Tri</th>
+      <th>3º Tri</th>
+      <th>Média</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for d in disciplinas %}
+      <tr>
+        <td>{{ d.nome }}</td>
+        <td>{% if d.nome in notas_dict and 1 in notas_dict[d.nome] %}{{ notas_dict[d.nome][1] }}{% else %}—{% endif %}</td>
+        <td>{% if d.nome in notas_dict and 2 in notas_dict[d.nome] %}{{ notas_dict[d.nome][2] }}{% else %}—{% endif %}</td>
+        <td>{% if d.nome in notas_dict and 3 in notas_dict[d.nome] %}{{ notas_dict[d.nome][3] }}{% else %}—{% endif %}</td>
+        <td>{% set media = medias[d.nome] %}{% if media is not none %}<span {% if media < 10 %}style="color:red;font-weight:bold"{% endif %}>{{ media }}</span>{% else %}—{% endif %}</td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+<p style="font-size:0.9em;color:#888">Documento gerado automaticamente pelo sistema eskola.</p>
+{% endblock %}

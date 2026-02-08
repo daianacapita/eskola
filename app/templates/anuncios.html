@@ -1,24 +1,43 @@
-<!doctype html>
 {% extends "base.html" %}
+{% from "_widgets.html" import widget_card %}
 
-{% block title %}Anúncios{% endblock %}
-
-{% block header %}
-  <h1>Anúncios e Comunicados</h1>
-{% endblock %}
+{% block title %}Notícias e Anúncios{% endblock %}
 
 {% block content %}
+<div class="liceu-page-header">
+  <h1>Notícias e Comunicados</h1>
+</div>
+
+<div class="liceu-content">
+  
+  {# Botão Admin para criar anúncio #}
   {% if g.user and g.user['papel'] == 'admin' %}
-    <a href="{{ url_for('admin.criar_anuncio') }}">Adicionar Anúncio</a>
-  {% endif %}
-  {% for anuncio in anuncios %}
-    <div>
-      <h3>{{ anuncio['titulo'] }}</h3>
-      <p>{{ anuncio['conteudo'] }}</p>
-      <small>Publicado em {{ anuncio['data_publicacao'] }}</small>
+    <div style="margin-bottom: var(--spacing-lg);">
+      <a href="{{ url_for('admin.criar_anuncio') }}" class="btn btn-primary">
+        <i class="fa fa-plus"></i> Adicionar Anúncio
+      </a>
     </div>
-  {% endfor %}
-  {% if not anuncios %}
-    <p>Nenhum anúncio disponível.</p>
   {% endif %}
+  
+  {# Lista de Anúncios #}
+  {% if anuncios %}
+    {% for anuncio in anuncios %}
+      {% call widget_card(anuncio['titulo'], 'fa-bullhorn') %}
+        <div style="margin-bottom: var(--spacing-md);">
+          <small style="color: var(--liceu-gray-300); display: flex; align-items: center; gap: var(--spacing-xs);">
+            <i class="fa fa-calendar"></i> {{ anuncio['data_publicacao'] }}
+          </small>
+        </div>
+        <div style="line-height: 1.6; color: var(--liceu-gray-700);">
+          {{ anuncio['conteudo'] }}
+        </div>
+      {% endcall %}
+    {% endfor %}
+  {% else %}
+    {% call widget_card('Notícias & Avisos', 'fa-bullhorn') %}
+      <p class="widget-placeholder">Nenhum anúncio disponível no momento.</p>
+    {% endcall %}
+  {% endif %}
+  
+</div>
 {% endblock %}

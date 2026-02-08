@@ -4,30 +4,61 @@
 {% block title %}Aprovar Alunos{% endblock %}
 
 {% block header %}
-  <h1>Alunos Pendentes de Aprovação</h1>
+  <h1>Pré-Inscrições Pendentes de Aprovação</h1>
 {% endblock %}
 
 {% block content %}
-  {% for aluno in alunos %}
-    <div>
-      <h3>{{ aluno['nome'] }} ({{ aluno['email'] }})</h3>
-      {% if aluno['turmas'] %}
-      <form method="post" action="{{ url_for('admin.aprovar_aluno', user_id=aluno['user_id']) }}">
-        <label for="turma_{{ aluno['user_id'] }}">Selecionar Turma</label>
-        <select name="turma_id" id="turma_{{ aluno['user_id'] }}" required>
+  {% for preinscricao in preinscricoes %}
+    <div style="border: 1px solid #ddd; padding: 15px; margin-bottom: 20px; border-radius: 5px;">
+      <h3>{{ preinscricao['nome'] }} ({{ preinscricao['email'] }})</h3>
+      <p>
+        <strong>BI:</strong> {{ preinscricao['numero_bilhete'] }}
+        | <strong>Data de Inscrição:</strong> {{ preinscricao['data_preinscricao'] }}
+        | <a href="{{ url_for('perfil.perfil', aluno_id=preinscricao['preinscricao_id']) }}">Ver perfil</a>
+      </p>
+      
+      {% if preinscricao['documento_anterior_path'] or preinscricao['bilhete_path'] %}
+      <div style="background-color: #f5f5f5; padding: 10px; margin-bottom: 10px; border-radius: 3px;">
+        <strong>Documentos:</strong>
+        <ul style="margin: 5px 0;">
+          {% if preinscricao['documento_anterior_path'] %}
+          <li>
+            <a href="{{ url_for('auth.download_documento', preinscricao_id=preinscricao['preinscricao_id'], doc_type='documento_anterior') }}" 
+               target="_blank" style="color: #0066cc; text-decoration: none;">
+              📄 Certificado/Declaração
+            </a>
+          </li>
+          {% endif %}
+          {% if preinscricao['bilhete_path'] %}
+          <li>
+            <a href="{{ url_for('auth.download_documento', preinscricao_id=preinscricao['preinscricao_id'], doc_type='bilhete') }}" 
+               target="_blank" style="color: #0066cc; text-decoration: none;">
+              📄 Bilhete de Identidade
+            </a>
+          </li>
+          {% endif %}
+        </ul>
+      </div>
+      {% endif %}
+      
+      {% if preinscricao['turmas'] %}
+      <form method="post" action="{{ url_for('admin.aprovar_aluno', preinscricao_id=preinscricao['preinscricao_id']) }}" style="display: inline;">
+        <label for="turma_{{ preinscricao['preinscricao_id'] }}">Selecionar Turma para Matrícula:</label>
+        <select name="turma_id" id="turma_{{ preinscricao['preinscricao_id'] }}" required style="padding: 5px;">
           <option value="">-- Escolher Turma --</option>
-          {% for turma in aluno['turmas'] %}
+          {% for turma in preinscricao['turmas'] %}
             <option value="{{ turma['id'] }}">{{ turma['designacao'] }} ({{ turma['curso_nome'] }})</option>
           {% endfor %}
         </select>
-        <input type="submit" value="Aprovar e Matricular">
+        <input type="submit" value="Aprovar e Matricular" style="padding: 5px 15px; cursor: pointer;">
       </form>
       {% else %}
-      <p>Não há turmas disponíveis para o curso e ano preferidos deste aluno.</p>
+      <p style="color: #d9534f;"><strong>⚠️ Nenhuma turma disponível</strong> para o curso e ano preferidos deste aluno.</p>
       {% endif %}
     </div>
   {% endfor %}
-  {% if not alunos %}
-    <p>Nenhum aluno pendente.</p>
+  
+  {% if not preinscricoes %}
+    <p style="text-align: center; color: #666;">Nenhuma pré-inscrição pendente de aprovação.</p>
   {% endif %}
 {% endblock %}

@@ -9,27 +9,39 @@
 
 {% block content %}
   <a href="{{ url_for('admin.criar_turma') }}">Criar Nova Turma</a>
-
-  {% if cursos %}
-    {% for curso in cursos %}
-      <h2>{{ curso['curso_nome'] }}</h2>
-
-      {% for classe in curso['classes'] %}
-        <h3>Classe {{ classe['ano'] }}</h3>
-        <ul>
-          {% for turma in classe['turmas'] %}
-            <li>
-              <a href="{{ url_for('admin.turma_detalhes', id=turma['id']) }}">{{ turma['designacao'] }}</a>
-              ({{ turma['ano_lectivo'] }})
-              <form method="post" action="{{ url_for('admin.deletar_turma', id=turma['id']) }}" style="display:inline;">
-                <input type="submit" value="Deletar" onclick="return confirm('Tem certeza?')">
-              </form>
-            </li>
+  <input id="turmas-filter" class="table-filter" type="text" placeholder="Filtrar turmas..." onkeyup="filterTable('turmas-filter','turmas-tabela')">
+  <table id="turmas-tabela" style="width:100%;margin-top:10px">
+    <thead>
+      <tr>
+        <th>Curso</th>
+        <th>Classe</th>
+        <th>Designação</th>
+        <th>Ano Letivo</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% if cursos %}
+        {% for curso in cursos %}
+          {% for classe in curso['classes'] %}
+            {% for turma in classe['turmas'] %}
+            <tr>
+              <td>{{ curso['curso_nome'] }}</td>
+              <td>{{ classe['ano'] }}</td>
+              <td><a href="{{ url_for('admin.turma_detalhes', id=turma['id']) }}">{{ turma['designacao'] }}</a></td>
+              <td>{{ turma['ano_lectivo'] }}</td>
+              <td>
+                <form method="post" action="{{ url_for('admin.deletar_turma', id=turma['id']) }}" style="display:inline;">
+                  <input type="submit" value="Deletar" onclick="return confirm('Tem certeza?')">
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
           {% endfor %}
-        </ul>
-      {% endfor %}
-    {% endfor %}
-  {% else %}
-    <p>Nenhuma turma cadastrada.</p>
-  {% endif %}
+        {% endfor %}
+      {% else %}
+        <tr><td colspan="5">Nenhuma turma cadastrada.</td></tr>
+      {% endif %}
+    </tbody>
+  </table>
 {% endblock %}

@@ -1,25 +1,44 @@
-<!doctype html>
 {% extends "base.html" %}
+{% from "_widgets.html" import widget_card, widget_avisos, widget_quick_links %}
 
-{% block title %}Página Inicial{% endblock %}
-
-{% block header %}
-  <h1>Bem-vindo ao Eskola</h1>
-{% endblock %}
+{% block title %}Início{% endblock %}
 
 {% block content %}
-  <p>Sistema de gestão escolar.</p>
-  <p>Faça login para acessar sua área.</p>
+<div class="liceu-page-header">
+  <h1>Bem-vindo ao Liceu de Cabinda</h1>
+</div>
 
+<div class="liceu-content">
+  
+  <!-- Widgets Grid -->
   {% if anuncios %}
-  <h2>Anúncios Recentes</h2>
-  {% for anuncio in anuncios %}
-    <div style="border: 1px solid #ccc; padding: 10px; margin: 10px 0;">
-      <h3>{{ anuncio['titulo'] }}</h3>
-      <p>{{ anuncio['conteudo'] }}</p>
-      <small>Publicado em {{ anuncio['data_publicacao'] }}</small>
-    </div>
-  {% endfor %}
-  <p><a href="{{ url_for('anuncios') }}">Ver todos os anúncios</a></p>
+    {{ widget_avisos(anuncios[:5]) }}
+  {% else %}
+    {% call widget_card('fa-bullhorn', 'Notícias & Avisos') %}
+      <p class="widget-placeholder">Nenhum anúncio disponível no momento.</p>
+    {% endcall %}
   {% endif %}
+  
+  {% call widget_card('fa-info-circle', 'Sobre o Sistema') %}
+    <p>O Sistema de Gestão Escolar do Liceu de Cabinda permite:</p>
+    <ul style="margin-top: var(--spacing-md); padding-left: 1.5rem;">
+      <li>Gestão de turmas, disciplinas e cursos</li>
+      <li>Controle de matrículas e aprovações</li>
+      <li>Lançamento de notas e visualização de boletins</li>
+      <li>Comunicação através de anúncios</li>
+      <li>Acesso diferenciado para Admin, Professores e Alunos</li>
+    </ul>
+    <a href="{{ url_for('auth.login') }}" class="widget-link">
+      <i class="fa fa-sign-in-alt"></i> Fazer Login
+    </a>
+  {% endcall %}
+  
+  {% set quick_links = [
+    {'url': url_for('auth.login'), 'icon': 'fa-sign-in-alt', 'text': 'Login'},
+    {'url': url_for('auth.pre_register'), 'icon': 'fa-user-plus', 'text': 'Pré-Inscrição'},
+    {'url': url_for('verificar_boletim'), 'icon': 'fa-file-alt', 'text': 'Verificar Boletim'}
+  ] %}
+  {{ widget_quick_links(quick_links) }}
+  
+</div>
 {% endblock %}

@@ -1,8 +1,51 @@
+from datetime import datetime, timedelta
+
 from flask import Blueprint, render_template, g, request, flash, redirect, url_for, session
 from app.auth import login_required
 from app.db import get_db
 
 bp = Blueprint('admin', __name__, url_prefix='/admin')
+
+
+def get_tempos(periodo):
+    periodos = {
+        'matinal': ('07:00', '12:30'),
+        'vespertino': ('13:00', '17:30'),
+        'pos_laboral': ('18:00', '22:30'),
+    }
+
+    if periodo not in periodos:
+        periodo = 'matinal'
+
+    inicio_str, fim_str = periodos[periodo]
+    inicio = datetime.strptime(inicio_str, '%H:%M')
+    fim = datetime.strptime(fim_str, '%H:%M')
+
+    tempos = []
+    t = inicio
+    idx = 1
+
+    while True:
+        t_fim = t + timedelta(minutes=45)
+        if t_fim > fim:
+            break
+
+        tempos.append(
+            {
+                'tempo': idx,
+                'inicio': t.strftime('%H:%M'),
+                'fim': t_fim.strftime('%H:%M'),
+                'label': f"T{idx} ({t.strftime('%H:%M')}-{t_fim.strftime('%H:%M')})",
+            }
+        )
+
+        idx += 1
+        proximo_inicio = t_fim + timedelta(minutes=5)
+        if proximo_inicio > fim:
+            break
+        t = proximo_inicio
+
+    return tempos
 
 @bp.route('/criar_curso', methods=['GET', 'POST'])
 @login_required
@@ -48,6 +91,7 @@ def criar_disciplina():
         ano = request.form.get('ano')
         nome = request.form.get('nome')
         descricao = request.form.get('descricao')
+        carga_semanal = request.form.get('carga_semanal', '1')
         
         if not curso_id or not ano or not nome:
             flash('Curso, classe e nome são obrigatórios.')
@@ -62,6 +106,16 @@ def criar_disciplina():
         if ano_int < 10 or ano_int > 12:
             flash('Classe inválida.')
             return redirect(url_for('admin.criar_disciplina'))
+
+        try:
+            carga_semanal_int = int(carga_semanal)
+        except (TypeError, ValueError):
+            flash('Carga semanal inválida.')
+            return redirect(url_for('admin.criar_disciplina'))
+
+        if carga_semanal_int < 1 or carga_semanal_int > 15:
+            flash('Carga semanal inválida. Use um valor entre 1 e 15.')
+            return redirect(url_for('admin.criar_disciplina'))
         
         existing = db.execute(
             'SELECT id FROM Disciplinas WHERE curso_id = ? AND ano = ? AND nome = ?',
@@ -72,8 +126,8 @@ def criar_disciplina():
             return redirect(url_for('admin.criar_disciplina'))
         
         db.execute(
-            'INSERT INTO Disciplinas (curso_id, ano, nome, descricao) VALUES (?, ?, ?, ?)',
-            (curso_id, ano_int, nome, descricao)
+            'INSERT INTO Disciplinas (curso_id, ano, nome, descricao, carga_semanal) VALUES (?, ?, ?, ?, ?)',
+            (curso_id, ano_int, nome, descricao, carga_semanal_int)
         )
         db.commit()
         flash('Disciplina criada com sucesso.')
@@ -96,6 +150,7 @@ def criar_turma():
         curso_id = request.form.get('curso_id')
         ano_lectivo_id = request.form.get('ano_lectivo_id')
         ano = request.form.get('ano')
+        periodo = request.form.get('periodo')
         sala_aula = request.form.get('sala_aula')
         designacao = request.form.get('designacao')
         
@@ -115,6 +170,10 @@ def criar_turma():
 
         if designacao is None:
             designacao = ''
+
+        if periodo not in ('matinal', 'vespertino', 'pos_laboral'):
+            flash('Período inválido.')
+            return redirect(url_for('admin.criar_turma'))
         
         existing = db.execute('SELECT id FROM Turmas WHERE curso_id = ? AND ano_lectivo_id = ? AND ano = ? AND designacao = ?', 
                               (curso_id, ano_lectivo_id, ano_int, designacao)).fetchone()
@@ -122,8 +181,10 @@ def criar_turma():
             flash('Turma já existe.')
             return redirect(url_for('admin.criar_turma'))
         
-        db.execute('INSERT INTO Turmas (curso_id, ano_lectivo_id, ano, sala_aula, designacao) VALUES (?, ?, ?, ?, ?)', 
-                   (curso_id, ano_lectivo_id, ano_int, sala_aula, designacao))
+        db.execute(
+            'INSERT INTO Turmas (curso_id, ano_lectivo_id, ano, periodo, sala_aula, designacao) VALUES (?, ?, ?, ?, ?, ?)',
+            (curso_id, ano_lectivo_id, ano_int, periodo, sala_aula, designacao)
+        )
 
         turma_id_row = db.execute('SELECT last_insert_rowid()').fetchone()
         turma_id = turma_id_row[0] if turma_id_row is not None else None
@@ -226,12 +287,127 @@ def disciplinas():
         return redirect(url_for('index'))
     
     db = get_db()
-    disciplinas = db.execute('''
+    disciplinas_rows = db.execute('''
         SELECT d.*, c.nome as curso_nome 
         FROM Disciplinas d 
         JOIN Cursos c ON d.curso_id = c.id
     ''').fetchall()
-    return render_template('admin/disciplinas.html', disciplinas=disciplinas)
+
+    disciplinas_view = []
+    for row in disciplinas_rows:
+        carga_min = ((row['carga_semanal'] or 1) * 45)
+        hh = carga_min // 60
+        mm = carga_min % 60
+        disciplinas_view.append(
+            {
+                **dict(row),
+                'carga_min': carga_min,
+                'carga_hhmm': f'{hh:02d}:{mm:02d}',
+            }
+        )
+
+    return render_template('admin/disciplinas.html', disciplinas=disciplinas_view)
+
+
+@bp.route('/disciplina/<int:id>')
+@login_required
+def disciplina_detalhes(id):
+    if g.user['papel'] != 'admin':
+        flash('Acesso negado.')
+        return redirect(url_for('index'))
+
+    db = get_db()
+    disciplina = db.execute(
+        '''
+        SELECT d.*, c.nome as curso_nome
+        FROM Disciplinas d
+        JOIN Cursos c ON c.id = d.curso_id
+        WHERE d.id = ?
+        ''',
+        (id,)
+    ).fetchone()
+
+    if disciplina is None:
+        flash('Disciplina não encontrada.')
+        return redirect(url_for('admin.disciplinas'))
+
+    turmas = db.execute(
+        '''
+        SELECT
+          t.id as turma_id,
+          t.designacao,
+          t.ano,
+          t.periodo,
+          a.ano as ano_lectivo,
+          p.nome as professor_nome
+        FROM TurmaDisciplinas td
+        JOIN Turmas t ON t.id = td.turma_id
+        JOIN AnoLectivo a ON a.id = t.ano_lectivo_id
+        LEFT JOIN Docencia doc ON doc.turma_disciplina_id = td.id AND doc.data_fim IS NULL
+        LEFT JOIN Professores p ON p.id = doc.professor_id
+        WHERE td.disciplina_id = ?
+        ORDER BY a.ano DESC, t.ano, t.designacao
+        ''',
+        (id,)
+    ).fetchall()
+
+    periodo_labels = {
+        'matinal': 'Matinal',
+        'vespertino': 'Vespertino',
+        'pos_laboral': 'Pós-laboral',
+    }
+
+    turmas_view = []
+    for t in turmas:
+        turmas_view.append(
+            {
+                **dict(t),
+                'periodo_label': periodo_labels.get(t['periodo'], t['periodo']),
+            }
+        )
+
+    carga_min = (disciplina['carga_semanal'] or 1) * 45
+    hh = carga_min // 60
+    mm = carga_min % 60
+    carga_hhmm = f'{hh:02d}:{mm:02d}'
+
+    return render_template(
+        'admin/disciplina_detalhes.html',
+        disciplina=disciplina,
+        turmas=turmas_view,
+        carga_min=carga_min,
+        carga_hhmm=carga_hhmm
+    )
+
+
+@bp.route('/disciplina/<int:id>/atualizar_carga', methods=['POST'])
+@login_required
+def atualizar_carga_disciplina(id):
+    if g.user['papel'] != 'admin':
+        flash('Acesso negado.')
+        return redirect(url_for('index'))
+
+    carga_semanal = request.form.get('carga_semanal', '1')
+    try:
+        carga_int = int(carga_semanal)
+    except (TypeError, ValueError):
+        flash('Carga semanal inválida.')
+        return redirect(url_for('admin.disciplina_detalhes', id=id))
+
+    if carga_int < 1 or carga_int > 15:
+        flash('Carga semanal inválida. Use um valor entre 1 e 15.')
+        return redirect(url_for('admin.disciplina_detalhes', id=id))
+
+    db = get_db()
+    existe = db.execute('SELECT id FROM Disciplinas WHERE id = ?', (id,)).fetchone()
+    if existe is None:
+        flash('Disciplina não encontrada.')
+        return redirect(url_for('admin.disciplinas'))
+
+    db.execute('UPDATE Disciplinas SET carga_semanal = ? WHERE id = ?', (carga_int, id))
+    db.commit()
+    flash('Carga semanal atualizada.')
+    return redirect(url_for('admin.disciplina_detalhes', id=id))
 
 @bp.route('/deletar_disciplina/<int:id>', methods=['POST'])
 @login_required
@@ -524,6 +700,266 @@ def salvar_notas_turma(id):
     return redirect(url_for('admin.notas_turma', id=id, trimestre=trimestre_int))
 
 
+@bp.route('/turma/<int:id>/horario')
+@login_required
+def horario_turma(id):
+    if g.user['papel'] != 'admin':
+        flash('Acesso negado.')
+        return redirect(url_for('index'))
+
+    db = get_db()
+    turma = db.execute(
+        '''
+        SELECT t.*, c.nome as curso_nome, c.descricao as curso_descricao, a.ano as ano_lectivo
+        FROM Turmas t
+        JOIN Cursos c ON t.curso_id = c.id
+        JOIN AnoLectivo a ON t.ano_lectivo_id = a.id
+        WHERE t.id = ?
+        ''',
+        (id,)
+    ).fetchone()
+
+    if turma is None:
+        flash('Turma não encontrada.')
+        return redirect(url_for('admin.turmas'))
+
+    periodo_labels = {
+        'matinal': 'Matinal (07:00–12:30)',
+        'vespertino': 'Vespertino (13:00–17:30)',
+        'pos_laboral': 'Pós-laboral (18:00–22:30)',
+    }
+    periodo_label = periodo_labels.get(turma['periodo'], turma['periodo'])
+
+    turma_disciplinas = db.execute(
+        '''
+        SELECT td.id as turma_disciplina_id, d.nome
+        FROM TurmaDisciplinas td
+        JOIN Disciplinas d ON d.id = td.disciplina_id
+        WHERE td.turma_id = ?
+        ORDER BY d.nome
+        ''',
+        (id,)
+    ).fetchall()
+
+    carga_rows = db.execute(
+        '''
+        SELECT td.id as turma_disciplina_id, d.carga_semanal
+        FROM TurmaDisciplinas td
+        JOIN Disciplinas d ON d.id = td.disciplina_id
+        WHERE td.turma_id = ?
+        ''',
+        (id,)
+    ).fetchall()
+    carga_td = {row['turma_disciplina_id']: row['carga_semanal'] for row in carga_rows}
+
+    td_nome = {row['turma_disciplina_id']: row['nome'] for row in turma_disciplinas}
+
+    horarios_rows = db.execute(
+        '''
+        SELECT dia_semana, tempo, turma_disciplina_id
+        FROM Horarios
+        WHERE turma_id = ?
+        ''',
+        (id,)
+    ).fetchall()
+
+    contagens_rows = db.execute(
+        'SELECT turma_disciplina_id, COUNT(*) as cnt FROM Horarios WHERE turma_id = ? GROUP BY turma_disciplina_id',
+        (id,)
+    ).fetchall()
+    contagens_td = {row['turma_disciplina_id']: row['cnt'] for row in contagens_rows}
+
+    slots = {}
+    for row in horarios_rows:
+        slots[(row['dia_semana'], row['tempo'])] = row['turma_disciplina_id']
+
+    tempos = get_tempos(turma['periodo'])
+    max_tempo = len(tempos)
+
+    return render_template(
+        'admin/horario_turma.html',
+        turma=turma,
+        periodo_label=periodo_label,
+        tempos=tempos,
+        max_tempo=max_tempo,
+        turma_disciplinas=turma_disciplinas,
+        slots=slots,
+        td_nome=td_nome,
+        contagens_td=contagens_td,
+        carga_td=carga_td
+    )
+
+
+@bp.route('/turma/<int:id>/horario/atribuir', methods=['POST'])
+@login_required
+def atribuir_horario(id):
+    if g.user['papel'] != 'admin':
+        flash('Acesso negado.')
+        return redirect(url_for('index'))
+
+    dia_semana = request.form.get('dia_semana')
+    tempo = request.form.get('tempo')
+    turma_disciplina_id = request.form.get('turma_disciplina_id')
+
+    if not dia_semana or not tempo or not turma_disciplina_id:
+        flash('Dados inválidos.')
+        return redirect(url_for('admin.horario_turma', id=id))
+
+    try:
+        dia_int = int(dia_semana)
+        tempo_int = int(tempo)
+        td_id_int = int(turma_disciplina_id)
+    except (TypeError, ValueError):
+        flash('Dados inválidos.')
+        return redirect(url_for('admin.horario_turma', id=id))
+
+    if dia_int not in (1, 2, 3, 4, 5):
+        flash('Dia inválido.')
+        return redirect(url_for('admin.horario_turma', id=id))
+
+    db = get_db()
+    turma = db.execute('SELECT id, periodo FROM Turmas WHERE id = ?', (id,)).fetchone()
+    if turma is None:
+        flash('Turma não encontrada.')
+        return redirect(url_for('admin.turmas'))
+
+    tempos = get_tempos(turma['periodo'])
+    if tempo_int < 1 or tempo_int > len(tempos):
+        flash('Tempo inválido para o período da turma.')
+        return redirect(url_for('admin.horario_turma', id=id))
+
+    current_slot = db.execute(
+        'SELECT turma_disciplina_id FROM Horarios WHERE turma_id = ? AND dia_semana = ? AND tempo = ?',
+        (id, dia_int, tempo_int)
+    ).fetchone()
+    if current_slot is not None and current_slot['turma_disciplina_id'] == td_id_int:
+        flash('Horário atualizado.')
+        return redirect(url_for('admin.horario_turma', id=id))
+
+    td = db.execute(
+        'SELECT 1 FROM TurmaDisciplinas WHERE id = ? AND turma_id = ?',
+        (td_id_int, id)
+    ).fetchone()
+    if td is None:
+        flash('Disciplina não pertence à turma.')
+        return redirect(url_for('admin.horario_turma', id=id))
+
+    carga_row = db.execute(
+        '''
+        SELECT d.carga_semanal
+        FROM TurmaDisciplinas td
+        JOIN Disciplinas d ON d.id = td.disciplina_id
+        WHERE td.id = ? AND td.turma_id = ?
+        ''',
+        (td_id_int, id)
+    ).fetchone()
+    if carga_row is None:
+        flash('Disciplina inválida.')
+        return redirect(url_for('admin.horario_turma', id=id))
+
+    carga_semanal = carga_row['carga_semanal']
+    count_row = db.execute(
+        'SELECT COUNT(*) FROM Horarios WHERE turma_id = ? AND turma_disciplina_id = ?',
+        (id, td_id_int)
+    ).fetchone()
+    count_atual = count_row[0] if count_row is not None else 0
+    novo_count = count_atual + 1
+    if novo_count > carga_semanal:
+        flash(f'Limite semanal atingido para esta disciplina ({carga_semanal} por semana).')
+        return redirect(url_for('admin.horario_turma', id=id))
+
+    professor_row = db.execute(
+        'SELECT professor_id FROM Docencia WHERE turma_disciplina_id = ? AND data_fim IS NULL',
+        (td_id_int,)
+    ).fetchone()
+    professor_id = professor_row['professor_id'] if professor_row is not None else None
+    if professor_id is not None:
+        conflito = db.execute(
+            '''
+            SELECT 1
+            FROM Horarios h
+            JOIN Docencia doc2
+              ON doc2.turma_disciplina_id = h.turma_disciplina_id
+             AND doc2.data_fim IS NULL
+            WHERE h.dia_semana = ? AND h.tempo = ?
+              AND doc2.professor_id = ?
+              AND h.turma_id != ?
+            LIMIT 1
+            ''',
+            (dia_int, tempo_int, professor_id, id)
+        ).fetchone()
+        if conflito is not None:
+            flash('Conflito: este professor já tem aula neste dia/tempo noutra turma.')
+            return redirect(url_for('admin.horario_turma', id=id))
+
+    try:
+        db.execute(
+            '''
+            INSERT INTO Horarios (turma_id, turma_disciplina_id, dia_semana, tempo)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(turma_id, dia_semana, tempo)
+            DO UPDATE SET turma_disciplina_id = excluded.turma_disciplina_id
+            ''',
+            (id, td_id_int, dia_int, tempo_int)
+        )
+    except Exception:
+        # fallback: UPDATE first, if no row updated then INSERT
+        cur = db.execute(
+            'UPDATE Horarios SET turma_disciplina_id = ? WHERE turma_id = ? AND dia_semana = ? AND tempo = ?',
+            (td_id_int, id, dia_int, tempo_int)
+        )
+        if cur.rowcount == 0:
+            db.execute(
+                'INSERT INTO Horarios (turma_id, turma_disciplina_id, dia_semana, tempo) VALUES (?, ?, ?, ?)',
+                (id, td_id_int, dia_int, tempo_int)
+            )
+
+    db.commit()
+    flash('Horário atualizado.')
+    return redirect(url_for('admin.horario_turma', id=id))
+
+
+@bp.route('/turma/<int:id>/horario/remover', methods=['POST'])
+@login_required
+def remover_horario(id):
+    if g.user['papel'] != 'admin':
+        flash('Acesso negado.')
+        return redirect(url_for('index'))
+
+    dia_semana = request.form.get('dia_semana')
+    tempo = request.form.get('tempo')
+
+    try:
+        dia_int = int(dia_semana)
+        tempo_int = int(tempo)
+    except (TypeError, ValueError):
+        flash('Dados inválidos.')
+        return redirect(url_for('admin.horario_turma', id=id))
+
+    if dia_int not in (1, 2, 3, 4, 5):
+        flash('Dia inválido.')
+        return redirect(url_for('admin.horario_turma', id=id))
+
+    db = get_db()
+    turma = db.execute('SELECT id, periodo FROM Turmas WHERE id = ?', (id,)).fetchone()
+    if turma is None:
+        flash('Turma não encontrada.')
+        return redirect(url_for('admin.turmas'))
+
+    tempos = get_tempos(turma['periodo'])
+    if tempo_int < 1 or tempo_int > len(tempos):
+        flash('Tempo inválido para o período da turma.')
+        return redirect(url_for('admin.horario_turma', id=id))
+
+    db.execute(
+        'DELETE FROM Horarios WHERE turma_id = ? AND dia_semana = ? AND tempo = ?',
+        (id, dia_int, tempo_int)
+    )
+    db.commit()
+    flash('Slot removido.')
+    return redirect(url_for('admin.horario_turma', id=id))
+
+
 @bp.route('/turma/<int:id>/docencia')
 @login_required
 def docencia_turma(id):
@@ -693,38 +1129,42 @@ def aprovar_alunos():
         return redirect(url_for('index'))
     
     db = get_db()
-    alunos_pendentes = db.execute('''
-        SELECT u.id as user_id, a.id as aluno_id, a.nome, a.email, a.curso_preferido_id, a.ano_preferido
-        FROM Usuarios u
-        JOIN Alunos a ON u.aluno_id = a.id
-        WHERE u.status = 'pendente' AND u.papel = 'aluno'
+    preinscricoes_pendentes = db.execute('''
+        SELECT id, nome, email, numero_bilhete, curso_preferido_id, ano_preferido, 
+               documento_anterior_path, bilhete_path, data_preinscricao
+        FROM PreInscricoes
+        WHERE status = 'pendente'
+        ORDER BY data_preinscricao DESC
     ''').fetchall()
     
-    # For each student, get matching turmas
-    alunos_com_turmas = []
-    for aluno in alunos_pendentes:
+    # For each pré-inscrição, get matching turmas
+    preinscricoes_com_turmas = []
+    for preinscricao in preinscricoes_pendentes:
         turmas = db.execute('''
             SELECT t.id, t.designacao, c.nome as curso_nome
             FROM Turmas t
             JOIN Cursos c ON t.curso_id = c.id
             WHERE t.curso_id = ? AND t.ano = ?
-        ''', (aluno['curso_preferido_id'], aluno['ano_preferido'])).fetchall()
-        alunos_com_turmas.append({
-            'user_id': aluno['user_id'],
-            'aluno_id': aluno['aluno_id'],
-            'nome': aluno['nome'],
-            'email': aluno['email'],
+        ''', (preinscricao['curso_preferido_id'], preinscricao['ano_preferido'])).fetchall()
+        preinscricoes_com_turmas.append({
+            'preinscricao_id': preinscricao['id'],
+            'nome': preinscricao['nome'],
+            'email': preinscricao['email'],
+            'numero_bilhete': preinscricao['numero_bilhete'],
+            'data_preinscricao': preinscricao['data_preinscricao'],
+            'documento_anterior_path': preinscricao['documento_anterior_path'],
+            'bilhete_path': preinscricao['bilhete_path'],
             'turmas': turmas
         })
     
-    return render_template('admin/aprovar_alunos.html', alunos=alunos_com_turmas)
+    return render_template('admin/aprovar_alunos.html', preinscricoes=preinscricoes_com_turmas)
 
-@bp.route('/aprovar_aluno/<int:user_id>', methods=['POST'])
+@bp.route('/aprovar_aluno/<int:preinscricao_id>', methods=['POST'])
 @login_required
-def aprovar_aluno(user_id):
+def aprovar_aluno(preinscricao_id):
     if g.user['papel'] != 'admin':
         flash('Acesso negado.')
-        return redirect(url_for('index'))
+        return redirect(url_for('admin.aprovar_alunos'))
     
     turma_id = request.form.get('turma_id')
     if not turma_id:
@@ -732,18 +1172,80 @@ def aprovar_aluno(user_id):
         return redirect(url_for('admin.aprovar_alunos'))
     
     db = get_db()
-    # Update status to ativo
-    db.execute('UPDATE Usuarios SET status = ? WHERE id = ?', ('ativo', user_id))
-    # Get aluno_id
-    user = db.execute('SELECT aluno_id FROM Usuarios WHERE id = ?', (user_id,)).fetchone()
-    if user:
-        aluno_id = user['aluno_id']
-        # Matricular
-        existing = db.execute('SELECT id FROM Matriculas WHERE aluno_id = ? AND turma_id = ?', (aluno_id, turma_id)).fetchone()
-        if not existing:
-            db.execute('INSERT INTO Matriculas (aluno_id, turma_id) VALUES (?, ?)', (aluno_id, turma_id))
+    preinscricao = db.execute(
+        'SELECT * FROM PreInscricoes WHERE id = ?', (preinscricao_id,)
+    ).fetchone()
+    
+    if not preinscricao:
+        flash('Pré-inscrição não encontrada.')
+        return redirect(url_for('admin.aprovar_alunos'))
+    
+    # Criar aluno a partir da pré-inscrição
+    try:
+        db.execute('''
+            INSERT INTO Alunos (nome, data_nascimento, email, telefone, endereco, numero_bilhete, 
+                              genero, nome_pai, nome_mae, telefone_encarregado, curso_preferido_id, ano_preferido)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (preinscricao['nome'], preinscricao['data_nascimento'], preinscricao['email'],
+              preinscricao['telefone'], preinscricao['endereco'], preinscricao['numero_bilhete'],
+              preinscricao['genero'], preinscricao['nome_pai'], preinscricao['nome_mae'],
+              preinscricao['telefone_encarregado'], preinscricao['curso_preferido_id'], preinscricao['ano_preferido']))
+        
+        aluno_id = db.execute('SELECT last_insert_rowid()').fetchone()[0]
+        
+        # Criar usuário com status ativo
+        from werkzeug.security import generate_password_hash
+        db.execute('''
+            INSERT INTO Usuarios (username, password, email, papel, status, aluno_id)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (preinscricao['username'], preinscricao['password'], preinscricao['email'], 'aluno', 'ativo', aluno_id))
+        
+        # Matricular em turma
+        db.execute(
+            'INSERT INTO Matriculas (aluno_id, turma_id) VALUES (?, ?)',
+            (aluno_id, turma_id)
+        )
+        
+        # Marcar pré-inscrição como aprovada
+        db.execute(
+            'UPDATE PreInscricoes SET status = ?, data_aprovacao = CURRENT_TIMESTAMP, admin_id = ? WHERE id = ?',
+            ('aprovado', g.user['id'], preinscricao_id)
+        )
+        
+        db.commit()
+        flash(f'Aluno {preinscricao["nome"]} aprovado e matriculado com sucesso.')
+    except Exception as e:
+        db.rollback()
+        flash(f'Erro ao aprovar aluno: {str(e)}')
+    
+    return redirect(url_for('admin.aprovar_alunos'))
+
+@bp.route('/rejeitar_preinscricao/<int:preinscricao_id>', methods=['POST'])
+@login_required
+def rejeitar_preinscricao(preinscricao_id):
+    if g.user['papel'] != 'admin':
+        flash('Acesso negado.')
+        return redirect(url_for('admin.aprovar_alunos'))
+
+    db = get_db()
+    preinscricao = db.execute(
+        'SELECT * FROM PreInscricoes WHERE id = ?', (preinscricao_id,)
+    ).fetchone()
+
+    if not preinscricao:
+        flash('Pré-inscrição não encontrada.')
+        return redirect(url_for('admin.aprovar_alunos'))
+
+    if preinscricao['status'] != 'pendente':
+        flash('Esta pré-inscrição não está pendente.')
+        return redirect(url_for('admin.aprovar_alunos'))
+
+    db.execute(
+        'UPDATE PreInscricoes SET status = ?, data_aprovacao = CURRENT_TIMESTAMP, admin_id = ? WHERE id = ?',
+        ('rejeitado', g.user['id'], preinscricao_id)
+    )
     db.commit()
-    flash('Aluno aprovado e matriculado.')
+    flash(f'Pré-inscrição de {preinscricao["nome"]} rejeitada.')
     return redirect(url_for('admin.aprovar_alunos'))
 
 @bp.route('/anuncios')

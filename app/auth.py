@@ -1,12 +1,70 @@
 import functools
+import os
+import uuid
+from pathlib import Path
 
 from flask import (
-    Blueprint, flash, g, redirect, render_template, request, session, url_for)
+    Blueprint, flash, g, redirect, render_template, request, session, url_for, current_app, send_file)
 from werkzeug.security import check_password_hash, generate_password_hash
+from werkzeug.utils import secure_filename
 from app.db import get_db
 
 bp = Blueprint('auth', __name__, url_prefix='/auth')
 
+# Configurações de upload
+ALLOWED_EXTENSIONS = {'pdf', 'jpg', 'jpeg', 'png'}
+MAX_FILE_SIZE = 4 * 1024 * 1024  # 4MB
+
+def allowed_file(filename):
+    """Verifica se a extensão do arquivo é permitida."""
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def validate_file_size(file_obj, max_size=MAX_FILE_SIZE):
+    """Verifica o tamanho do arquivo."""
+    file_obj.seek(0, os.SEEK_END)
+    size = file_obj.tell()
+    file_obj.seek(0)
+    return size <= max_size
+
+def save_uploaded_file(file_obj, preinscricao_id, file_type):
+    """
+    Salva o arquivo de forma segura.
+    file_type: 'documento_anterior' ou 'bilhete'
+    Retorna o caminho relativo do arquivo ou None se houver erro.
+    """
+    if not file_obj or file_obj.filename == '':
+        return None
+    
+    if not allowed_file(file_obj.filename):
+        return None
+    
+    if not validate_file_size(file_obj):
+        return None
+    
+    # Criar diretório para a pré-inscrição se não existir
+    base_upload_dir = os.path.join(
+        current_app.root_path, '..', 'uploads', 'preinscricao', str(preinscricao_id)
+    )
+    base_upload_dir = os.path.normpath(base_upload_dir)
+    os.makedirs(base_upload_dir, exist_ok=True)
+    
+    # Obter extensão do arquivo
+    ext = file_obj.filename.rsplit('.', 1)[1].lower()
+    
+    # Gerar nome único para o arquivo
+    unique_filename = f"{uuid.uuid4().hex}.{ext}"
+    
+    # Caminho completo para salvar
+    file_path = os.path.join(base_upload_dir, file_type, unique_filename)
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+    
+    try:
+        # Salvar arquivo
+        file_obj.save(file_path)
+        # Retornar caminho relativo para armazenar no BD
+        return os.path.join('uploads', 'preinscricao', str(preinscricao_id), file_type, unique_filename)
+    except Exception:
+        return None
 
 # Rota para registrar um novo usuário
 @bp.route('/register', methods=('GET', 'POST'))
@@ -151,36 +209,90 @@ def pre_register():
         username = request.form.get('username')
         password = request.form.get('password')
         
+        # Obter arquivos
+        documento_anterior = request.files.get('documento_anterior')
+        bilhete = request.files.get('bilhete')
+        
         db = get_db()
         error = None
 
+        # Validações básicas
         if not nome or not data_nascimento or not email or not numero_bilhete or not username or not password:
             error = 'Nome, data de nascimento, email, número do bilhete, username e password são obrigatórios.'
-
+        
+        # Validar documentos obrigatórios
         if error is None:
+            if not documento_anterior or documento_anterior.filename == '':
+                error = 'Certificado/declaração da classe anterior é obrigatório.'
+            elif not bilhete or bilhete.filename == '':
+                error = 'Bilhete de Identidade é obrigatório.'
+
+        # Verificar se email ou bilhete já existem
+        if error is None:
+            existing_preinscricao = db.execute(
+                'SELECT id FROM PreInscricoes WHERE email = ? OR numero_bilhete = ?',
+                (email, numero_bilhete)
+            ).fetchone()
             existing_aluno = db.execute(
-                'SELECT id FROM Alunos WHERE email = ? OR numero_bilhete = ?', (email, numero_bilhete)
+                'SELECT id FROM Alunos WHERE email = ? OR numero_bilhete = ?',
+                (email, numero_bilhete)
             ).fetchone()
             existing_user = db.execute(
-                'SELECT id FROM Usuarios WHERE username = ? OR email = ?', (username, email)
+                'SELECT id FROM Usuarios WHERE username = ? OR email = ?',
+                (username, email)
             ).fetchone()
-            if existing_aluno is not None or existing_user is not None:
-                error = 'Já existe registro com este email ou número do bilhete.'
+            if existing_preinscricao is not None or existing_aluno is not None or existing_user is not None:
+                error = 'Já existe um registro com este email ou número do bilhete.'
 
+        # Salvar pré-inscrição primeiro para obter ID
         if error is None:
-            db.execute(
-                'INSERT INTO Alunos (nome, data_nascimento, email, telefone, endereco, numero_bilhete, genero, nome_pai, nome_mae, telefone_encarregado, curso_preferido_id, ano_preferido) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                (nome, data_nascimento, email, telefone, endereco, numero_bilhete, genero, nome_pai, nome_mae, telefone_encarregado, curso_preferido_id, ano_preferido)
-            )
-            aluno_id = db.execute('SELECT last_insert_rowid()').fetchone()[0]
-            db.execute(
-                'INSERT INTO Usuarios (username, password, email, papel, status, aluno_id) VALUES (?, ?, ?, ?, ?, ?)',
-                (username, generate_password_hash(password), email, 'aluno', 'pendente', aluno_id)
-            )
-            db.commit()
-            flash('Pré-inscrição enviada. Aguarde aprovação do administrador.')
-            return redirect(url_for('index'))
+            try:
+                db.execute(
+                    '''INSERT INTO PreInscricoes 
+                    (nome, data_nascimento, email, telefone, endereco, numero_bilhete, 
+                     genero, nome_pai, nome_mae, telefone_encarregado, curso_preferido_id, 
+                     ano_preferido, username, password) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+                    (nome, data_nascimento, email, telefone, endereco, numero_bilhete,
+                     genero, nome_pai, nome_mae, telefone_encarregado, curso_preferido_id,
+                     ano_preferido, username, generate_password_hash(password))
+                )
+                db.commit()
+                preinscricao_id = db.execute('SELECT last_insert_rowid()').fetchone()[0]
+            except Exception as e:
+                error = 'Erro ao salvar pré-inscrição. Tente novamente.'
 
+        # Salvar documentos
+        if error is None:
+            doc_anterior_path = save_uploaded_file(documento_anterior, preinscricao_id, 'documento_anterior')
+            bilhete_path = save_uploaded_file(bilhete, preinscricao_id, 'bilhete')
+            
+            if not doc_anterior_path:
+                error = 'Erro ao salvar certificado/declaração. Certifique-se de que é PDF ou imagem (JPG/PNG) e não excede 4MB.'
+            elif not bilhete_path:
+                error = 'Erro ao salvar Bilhete de Identidade. Certifique-se de que é PDF ou imagem (JPG/PNG) e não excede 4MB.'
+
+        # Atualizar paths dos documentos no banco de dados
+        if error is None:
+            try:
+                db.execute(
+                    'UPDATE PreInscricoes SET documento_anterior_path = ?, bilhete_path = ? WHERE id = ?',
+                    (doc_anterior_path, bilhete_path, preinscricao_id)
+                )
+                db.commit()
+                flash('Pré-inscrição enviada com sucesso. Aguarde aprovação do administrador.')
+                return redirect(url_for('index'))
+            except Exception as e:
+                error = 'Erro ao registrar documentos. Tente novamente.'
+
+        # Se houver erro, limpar a pré-inscrição criada
+        if error is not None and 'preinscricao_id' in locals():
+            try:
+                db.execute('DELETE FROM PreInscricoes WHERE id = ?', (preinscricao_id,))
+                db.commit()
+            except:
+                pass
+        
         flash(error)
 
     db = get_db()
@@ -246,3 +358,66 @@ def login_required(view):
         return view(**kwargs)
 
     return wrapped_view
+
+@bp.route('/download_documento/<int:preinscricao_id>/<doc_type>')
+@login_required
+def download_documento(preinscricao_id, doc_type):
+    """
+    Download seguro de documento. Admin ou aluno dono do documento pode acessar.
+    """
+    # Validar doc_type
+    if doc_type not in ['documento_anterior', 'bilhete']:
+        flash('Tipo de documento inválido.')
+        return redirect(url_for('index'))
+    
+    db = get_db()
+    preinscricao = db.execute(
+        'SELECT * FROM PreInscricoes WHERE id = ?', (preinscricao_id,)
+    ).fetchone()
+    
+    if not preinscricao:
+        flash('Pré-inscrição não encontrada.')
+        return redirect(url_for('index'))
+    
+    # Permissão: admin ou aluno dono
+    if g.user['papel'] == 'admin':
+        pass
+    elif g.user['papel'] == 'aluno':
+        aluno = db.execute(
+            'SELECT * FROM Alunos WHERE id = ?', (g.user['aluno_id'],)
+        ).fetchone()
+        if not aluno:
+            flash('Acesso negado.')
+            return redirect(url_for('index'))
+        if preinscricao['email'] != aluno['email'] and preinscricao['numero_bilhete'] != aluno['numero_bilhete']:
+            flash('Acesso negado.')
+            return redirect(url_for('index'))
+    else:
+        flash('Acesso negado.')
+        return redirect(url_for('index'))
+    
+    # Obter o caminho do documento
+    if doc_type == 'documento_anterior':
+        file_path = preinscricao['documento_anterior_path']
+    else:
+        file_path = preinscricao['bilhete_path']
+    
+    if not file_path:
+        flash('Documento não encontrado.')
+        return redirect(url_for('index'))
+    
+    # Converter arquivo relativo para caminho absoluto de forma segura
+    # Prevenir path traversal attacks
+    full_path = os.path.normpath(os.path.join(current_app.root_path, '..', file_path))
+    base_dir = os.path.normpath(os.path.join(current_app.root_path, '..', 'uploads', 'preinscricao'))
+    
+    # Garantir que o arquivo está dentro do diretório permitido
+    if not full_path.startswith(base_dir) or not os.path.exists(full_path):
+        flash('Acesso negado ao documento.')
+        return redirect(url_for('index'))
+    
+    try:
+        return send_file(full_path, as_attachment=True, download_name=os.path.basename(full_path))
+    except Exception:
+        flash('Erro ao baixar documento.')
+        return redirect(url_for('index'))

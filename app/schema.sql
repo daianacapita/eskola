@@ -14,6 +14,7 @@ DROP TABLE IF EXISTS Notas;
 DROP TABLE IF EXISTS NotasTrimestrais;
 DROP TABLE IF EXISTS Avaliacoes;
 DROP TABLE IF EXISTS Docencia;
+DROP TABLE IF EXISTS Horarios;
 DROP TABLE IF EXISTS TurmaDisciplinas;
 DROP TABLE IF EXISTS Matriculas;
 DROP TABLE IF EXISTS Turmas;
@@ -91,6 +92,34 @@ CREATE TABLE Usuarios (
   )
 );
 
+-- Pré-inscrições com documentos
+CREATE TABLE PreInscricoes (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  nome TEXT NOT NULL,
+  data_nascimento DATE NOT NULL,
+  email TEXT NOT NULL,
+  telefone TEXT,
+  endereco TEXT,
+  numero_bilhete TEXT NOT NULL,
+  genero TEXT CHECK(genero IN ('M','F','Outro')),
+  nome_pai TEXT,
+  nome_mae TEXT,
+  telefone_encarregado TEXT,
+  curso_preferido_id INTEGER REFERENCES Cursos(id),
+  ano_preferido INTEGER CHECK(ano_preferido >= 10 AND ano_preferido <= 12),
+  -- Documentos
+  documento_anterior_path TEXT,
+  bilhete_path TEXT,
+  -- Status
+  status TEXT NOT NULL DEFAULT 'pendente' CHECK(status IN ('pendente','aprovado','rejeitado')),
+  data_preinscricao TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  data_aprovacao TIMESTAMP,
+  admin_id INTEGER REFERENCES Usuarios(id) ON DELETE SET NULL,
+  -- Acesso para login tempora during pré-inscrição
+  username TEXT UNIQUE NOT NULL,
+  password TEXT NOT NULL
+);
+
 -- ============================================================
 -- Anúncios e Comunicados
 -- ============================================================
@@ -113,6 +142,7 @@ CREATE TABLE Disciplinas (
   ano INTEGER NOT NULL CHECK(ano >= 10 AND ano <= 12),
   nome TEXT NOT NULL,
   descricao TEXT,
+  carga_semanal INTEGER NOT NULL DEFAULT 1 CHECK(carga_semanal >= 1 AND carga_semanal <= 15),
   UNIQUE (curso_id, ano, nome)
 );
 
@@ -121,6 +151,8 @@ CREATE TABLE Turmas (
   curso_id INTEGER NOT NULL REFERENCES Cursos(id) ON DELETE RESTRICT,
   ano_lectivo_id INTEGER NOT NULL REFERENCES AnoLectivo(id) ON DELETE RESTRICT,
   ano INTEGER NOT NULL CHECK(ano >= 10 AND ano <= 12),
+  periodo TEXT NOT NULL DEFAULT 'matinal'
+    CHECK(periodo IN ('matinal','vespertino','pos_laboral')),
   sala_aula TEXT,
   designacao TEXT NOT NULL DEFAULT '', -- ex: "10A", "12B" (opcional)
   UNIQUE (curso_id, ano_lectivo_id, ano, designacao)
@@ -143,6 +175,15 @@ CREATE TABLE TurmaDisciplinas (
   turma_id INTEGER NOT NULL REFERENCES Turmas(id) ON DELETE CASCADE,
   disciplina_id INTEGER NOT NULL REFERENCES Disciplinas(id) ON DELETE RESTRICT,
   UNIQUE (turma_id, disciplina_id)
+);
+
+CREATE TABLE Horarios (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  turma_id INTEGER NOT NULL REFERENCES Turmas(id) ON DELETE CASCADE,
+  turma_disciplina_id INTEGER NOT NULL REFERENCES TurmaDisciplinas(id) ON DELETE CASCADE,
+  dia_semana INTEGER NOT NULL CHECK(dia_semana IN (1,2,3,4,5)), -- 1=Seg ... 5=Sex
+  tempo INTEGER NOT NULL CHECK(tempo >= 1 AND tempo <= 20),
+  UNIQUE(turma_id, dia_semana, tempo)
 );
 
 -- Quem lecciona o quê (professor por disciplina/turma)
@@ -259,6 +300,9 @@ CREATE INDEX idx_notas_matricula_id ON Notas(matricula_id);
 CREATE INDEX idx_notas_tri_matricula ON NotasTrimestrais(matricula_id);
 CREATE INDEX idx_notas_tri_turma_disciplina ON NotasTrimestrais(turma_disciplina_id);
 
+CREATE INDEX idx_horarios_turma_id ON Horarios(turma_id);
+CREATE INDEX idx_horarios_td_id ON Horarios(turma_disciplina_id);
+
 CREATE INDEX idx_aulas_turma_disciplina_id ON Aulas(turma_disciplina_id);
 CREATE INDEX idx_presencas_aula_id ON Presencas(aula_id);
 CREATE INDEX idx_presencas_matricula_id ON Presencas(matricula_id);
@@ -266,6 +310,10 @@ CREATE INDEX idx_presencas_matricula_id ON Presencas(matricula_id);
 CREATE INDEX idx_usuarios_papel ON Usuarios(papel);
 CREATE INDEX idx_usuarios_professor_id ON Usuarios(professor_id);
 CREATE INDEX idx_usuarios_aluno_id ON Usuarios(aluno_id);
+
+CREATE INDEX idx_preinscricoes_email ON PreInscricoes(email);
+CREATE INDEX idx_preinscricoes_status ON PreInscricoes(status);
+CREATE INDEX idx_preinscricoes_data ON PreInscricoes(data_preinscricao);
 
 -- ============================================================
 -- Seed (opcional): AnoLectivo e admin
